@@ -1,3 +1,6 @@
 [submodule "reference_repositories/effect-smol"]
 	path = reference_repositories/effect-smol
 	url = https://github.com/Effect-TS/effect-smol.git
+[submodule "reference_repositories/changesets"]
+	path = reference_repositories/changesets
+	url = https://github.com/changesets/changesets.git
