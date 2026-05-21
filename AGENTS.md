@@ -3,4 +3,4 @@
 - You and the user should police eachother (e.g. "Did you mean ...?") when conversations, documentation, and code no longer reflect a shared vocab.
 - Reference the git submodules in `reference_repositories` for best practices, usage examples, and documentation for the frameworks and packages we use.
 - Track Architecture Decisions using the local [ADR format](.agents/skills/grill-with-docs/ADR-FORMAT.md).
-- Additionally, when you have to be corrected more than once about something, make an ADR.
+- Tracked work lives as markdown under `issues/` (not GitHub Issues). See `issues/README.md` and `.agents/skills/issue-tracker.md`.
