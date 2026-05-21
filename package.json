@@ -1,11 +1,25 @@
 {
-  "name": "changes",
-  "module": "index.ts",
-  "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+	"name": "changes",
+	"description": "Changesets CLI rewritten in Effect v4 and with no external dependencies.",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsgo",
+		"check": "bun --bun biome check --write",
+		"references:update": "git submodule update --init --recursive",
+		"prepare": "effect-tsgo patch",
+		"chore:update": "bun update --latest && bun add effect@beta"
+	},
+	"dependencies": {
+		"effect": "^4.0.0-beta.70"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.15",
+		"@effect/tsgo": "^0.7.4",
+		"@types/bun": "latest",
+		"@typescript/native-preview": "^7.0.0-dev.20260519.1"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	}
 }

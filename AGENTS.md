@@ -1,0 +1,6 @@
+- Add a comment above each non-trivial regex breaking it down.
+- Keep `UBIQUITOUS_LANGUAGE.md` up-to-date. Collapse synonyms, flag ambiguous language and overloaded terminology.   
+- You and the user should police eachother (e.g. "Did you mean ...?") when conversations, documentation, and code no longer reflect a shared vocab.
+- Reference the git submodules in `reference_repositories` for best practices, usage examples, and documentation for the frameworks and packages we use.
+- Track Architecture Decisions in `ADR/{FEATURE}/*` (e.g. `/ARD/cli/0001-authentication.md`) with sections for `Problem`, `Considered Options`, and  `Decision Outcome`.
+- Additionally, when you have to be corrected more than once about something, make an ADR.
