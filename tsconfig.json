@@ -26,7 +26,14 @@
 		// Some stricter flags (disabled by default)
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"noPropertyAccessFromIndexSignature": true
+		"noPropertyAccessFromIndexSignature": true,
+
+		"plugins": [
+			{
+				"name": "@effect/language-service"
+			}
+		]
 	},
-	"exclude": ["reference_repositories/**/*"]
+	"exclude": ["reference_repositories/**/*"],
+	"$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
 }
