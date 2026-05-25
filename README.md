@@ -51,16 +51,16 @@ bun install
 Run the local CLI:
 
 ```sh
-bun --bun index.ts --help
+bun dev --help
 ```
 
-During local development, use `bun --bun index.ts` anywhere this README shows the
+During local development, use `bun dev` anywhere this README shows the
 installed `changes` binary:
 
 ```sh
-bun --bun index.ts init
-bun --bun index.ts add
-bun --bun index.ts version
+bun dev init
+bun dev add
+bun dev version
 ```
 
 ## Release Workflow
