@@ -1,55 +1,76 @@
 import { Effect, Layer } from "effect";
+import { ProcessExecution } from "../services/ProcessExecution.ts";
 import {
 	RegistryPublish,
 	RegistryPublishError,
 } from "../services/RegistryPublish.ts";
 
-const publish = Effect.fnUntraced(function* (options: {
-	readonly releases: Parameters<
-		RegistryPublish["Service"]["publish"]
-	>[0]["releases"];
-	readonly cwd: string;
-	readonly tag?: string;
-	readonly otp?: string;
-}) {
-	for (const release of options.releases) {
-		if (release.type === "none") {
-			continue;
-		}
-		const args = ["publish"];
-		if (options.tag !== undefined) {
-			args.push("--tag", options.tag);
-		}
-		if (options.otp !== undefined) {
-			args.push("--otp", options.otp);
-		}
-		yield* Effect.tryPromise({
-			try: () => {
-				const process = Bun.spawn(["npm", ...args], {
-					cwd: options.cwd,
-					stdout: "pipe",
-					stderr: "pipe",
+const make = Effect.gen(function* () {
+	const processExecution = yield* ProcessExecution;
+
+	const publish = Effect.fnUntraced(function* (
+		options: Parameters<RegistryPublish["Service"]["publish"]>[0],
+	) {
+		const packagesByName = new Map(
+			options.workspace.packages.map((workspacePackage) => [
+				workspacePackage.packageJson.name,
+				workspacePackage,
+			]),
+		);
+		for (const release of options.releases) {
+			if (release.type === "none") {
+				continue;
+			}
+			const workspacePackage = packagesByName.get(release.name);
+			if (workspacePackage === undefined) {
+				return yield* new RegistryPublishError({
+					message: `Could not find matching package for release of ${release.name}`,
 				});
-				return process.exited.then((code) =>
-					code === 0
-						? undefined
-						: new Response(process.stderr).text().then((stderr) => {
-								throw new Error(
-									stderr.trim() || `npm publish failed with code ${code}`,
-								);
+			}
+			if (workspacePackage.packageJson.private === true) {
+				continue;
+			}
+			const publishDirectory =
+				workspacePackage.packageJson.publishConfig?.directory === undefined
+					? workspacePackage.dir
+					: `${workspacePackage.dir}/${workspacePackage.packageJson.publishConfig.directory}`;
+			const args = ["publish"];
+			if (options.tag !== undefined) {
+				args.push("--tag", options.tag);
+			}
+			if (options.otp !== undefined) {
+				args.push("--otp", options.otp);
+			}
+			args.push(
+				"--access",
+				workspacePackage.packageJson.publishConfig?.access ?? options.access,
+			);
+			const result = yield* processExecution
+				.run({
+					command: "npm",
+					args,
+					cwd: publishDirectory,
+				})
+				.pipe(
+					Effect.mapError(
+						(cause) =>
+							new RegistryPublishError({
+								message: cause.message,
+								cause,
 							}),
+					),
 				);
-			},
-			catch: (cause) =>
-				new RegistryPublishError({
-					message: cause instanceof Error ? cause.message : String(cause),
-					cause,
-				}),
-		});
-	}
+			if (result.code !== 0) {
+				return yield* new RegistryPublishError({
+					message:
+						result.stderr.trim() ||
+						`npm publish failed with code ${result.code}`,
+				});
+			}
+		}
+	});
+
+	return RegistryPublish.of({ publish });
 });
 
-export const layer = Layer.succeed(
-	RegistryPublish,
-	RegistryPublish.of({ publish }),
-);
+export const layer = Layer.effect(RegistryPublish, make);

@@ -6,9 +6,9 @@ import { WorkspacePackageDiscovery } from "../services/WorkspacePackageDiscovery
 import { globMatchAny } from "./pure/glob-match.ts";
 
 const make = Effect.gen(function* () {
-	const git = yield* Git;
-	const discovery = yield* WorkspacePackageDiscovery;
-	const policy = yield* PackageVersionabilityPolicy;
+	const gitClient = yield* Git;
+	const workspacePackageDiscovery = yield* WorkspacePackageDiscovery;
+	const packageVersionabilityPolicy = yield* PackageVersionabilityPolicy;
 
 	const detectVersionableChangedPackages = Effect.fnUntraced(
 		function* (options: {
@@ -18,26 +18,29 @@ const make = Effect.gen(function* () {
 			>[0]["config"];
 			readonly ref?: string;
 		}) {
-			const workspace = yield* discovery.discover(options.cwd);
-			const ref = options.ref ?? options.config.baseBranch;
-			const changedFiles = yield* git.getChangedFilesSinceRef({
+			const workspace = yield* workspacePackageDiscovery.discover(options.cwd);
+			const gitRef = options.ref ?? options.config.baseBranch;
+			const changedFiles = yield* gitClient.getChangedFilesSinceRef({
 				cwd: options.cwd,
-				ref,
+				ref: gitRef,
 			});
 			const changedPackages = [];
-			for (const pkg of workspace.packages) {
-				const skip = yield* policy.shouldSkip(pkg, options.config);
+			for (const workspacePackage of workspace.packages) {
+				const skip = yield* packageVersionabilityPolicy.shouldSkip(
+					workspacePackage,
+					options.config,
+				);
 				if (skip) {
 					continue;
 				}
-				const relativeDir = pkg.dir.replace(`${options.cwd}/`, "");
+				const relativeDir = workspacePackage.dir.replace(`${options.cwd}/`, "");
 				const changed = changedFiles.some(
 					(file) =>
 						file.startsWith(relativeDir === "" ? "" : `${relativeDir}/`) &&
 						globMatchAny(file, options.config.changedFilePatterns),
 				);
 				if (changed) {
-					changedPackages.push(pkg);
+					changedPackages.push(workspacePackage);
 				}
 			}
 			return changedPackages;

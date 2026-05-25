@@ -6,7 +6,7 @@ import {
 } from "../services/PackageGitTagger.ts";
 
 const make = Effect.gen(function* () {
-	const git = yield* Git;
+	const gitClient = yield* Git;
 
 	const tagWorkspacePackages = Effect.fnUntraced(function* (options: {
 		readonly cwd: string;
@@ -14,10 +14,15 @@ const make = Effect.gen(function* () {
 			PackageGitTagger["Service"]["tagWorkspacePackages"]
 		>[0]["workspace"];
 	}) {
-		const tags: Array<string> = [];
-		for (const pkg of options.workspace.packages) {
-			const tag = `${pkg.packageJson.name}@${pkg.packageJson.version}`;
-			yield* git.tag(tag, options.cwd).pipe(
+		const createdTagNames: Array<string> = [];
+		const isSinglePackageRepository =
+			options.workspace.packages.length === 1 &&
+			options.workspace.packages[0]?.dir === options.workspace.dir;
+		for (const workspacePackage of options.workspace.packages) {
+			const gitTagName = isSinglePackageRepository
+				? `v${workspacePackage.packageJson.version}`
+				: `${workspacePackage.packageJson.name}@${workspacePackage.packageJson.version}`;
+			yield* gitClient.tag(gitTagName, options.cwd).pipe(
 				Effect.mapError(
 					(cause) =>
 						new PackageGitTaggerError({
@@ -25,9 +30,9 @@ const make = Effect.gen(function* () {
 						}),
 				),
 			);
-			tags.push(tag);
+			createdTagNames.push(gitTagName);
 		}
-		return tags;
+		return createdTagNames;
 	});
 
 	return PackageGitTagger.of({ tagWorkspacePackages });

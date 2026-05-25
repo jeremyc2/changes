@@ -4,3 +4,4 @@
 - Reference the git submodules in `reference_repositories` for best practices, usage examples, and documentation for the frameworks and packages we use.
 - Track Architecture Decisions using the local [ADR format](.agents/skills/grill-with-docs/ADR-FORMAT.md).
 - Tracked work lives as markdown under `issues/` (not GitHub Issues). See `issues/README.md` and `.agents/skills/issue-tracker.md`.
+- Use descriptive variable names.

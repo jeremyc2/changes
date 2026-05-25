@@ -52,7 +52,9 @@ const make = Effect.gen(function* () {
 		}
 		const contents = yield* filesystem.readUtf8(configPath);
 		const json = parseJsonString(contents) as Record<string, unknown>;
-		const packageNames = workspace.packages.map((pkg) => pkg.packageJson.name);
+		const packageNames = workspace.packages.map(
+			(workspacePackage) => workspacePackage.packageJson.name,
+		);
 		for (const pattern of (json["ignore"] as
 			| ReadonlyArray<string>
 			| undefined) ?? []) {

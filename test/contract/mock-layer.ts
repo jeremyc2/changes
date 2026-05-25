@@ -105,7 +105,10 @@ export const cliContractLayer = Layer.mergeAll(
 	),
 	Layer.succeed(
 		ProcessExecution,
-		ProcessExecution.of({ spawnDetached: noopFn }),
+		ProcessExecution.of({
+			run: () => Effect.succeed({ code: 0, stdout: "", stderr: "" }),
+			spawnDetached: noopFn,
+		}),
 	),
 	Layer.succeed(
 		PreReleaseStateManager,

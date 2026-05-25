@@ -72,17 +72,19 @@ export type PreCommandInput = {
 export const loadWorkspaceContext = Effect.fnUntraced(function* (
 	rootDir: string,
 ) {
-	const workspace = yield* WorkspacePackageDiscovery.use((discovery) =>
-		discovery.discover(rootDir),
+	const workspace = yield* WorkspacePackageDiscovery.use(
+		(workspacePackageDiscovery) => workspacePackageDiscovery.discover(rootDir),
 	);
-	const config = yield* ChangesetConfigReader.use((reader) =>
-		reader.read(rootDir, workspace),
+	const config = yield* ChangesetConfigReader.use((changesetConfigReader) =>
+		changesetConfigReader.read(rootDir, workspace),
 	);
 	return { workspace, config };
 });
 
 export const initCommand = Effect.fnUntraced(function* (rootDir: string) {
-	yield* ChangesetWorkspaceInit.use((init) => init.scaffold(rootDir));
+	yield* ChangesetWorkspaceInit.use((changesetWorkspaceInit) =>
+		changesetWorkspaceInit.scaffold(rootDir),
+	);
 });
 
 export const completeAddChangeset = Effect.fnUntraced(function* (options: {
@@ -103,26 +105,31 @@ export const completeAddChangeset = Effect.fnUntraced(function* (options: {
 		summary: options.summary,
 		releases: options.releases,
 	};
-	const changesetPath = yield* ChangesetDocumentWriter.use((writer) =>
-		writer.write(options.rootDir, draft, options.config),
+	const changesetPath = yield* ChangesetDocumentWriter.use(
+		(changesetDocumentWriter) =>
+			changesetDocumentWriter.write(options.rootDir, draft, options.config),
 	);
-	yield* CliOutput.use((output) =>
-		output.success(`Changeset added: ${changesetPath}`),
+	yield* CliOutput.use((cliOutput) =>
+		cliOutput.success(`Changeset added: ${changesetPath}`),
 	);
-	const addCommit = yield* ChangesetCommitHooks.use((hooks) =>
-		hooks.resolveAddCommitMessage({
+	const addCommit = yield* ChangesetCommitHooks.use((changesetCommitHooks) =>
+		changesetCommitHooks.resolveAddCommitMessage({
 			rootDir: options.rootDir,
 			draft,
 			config: options.config,
 		}),
 	);
 	if (addCommit !== undefined) {
-		yield* Git.use((git) => git.add(changesetPath, options.rootDir));
-		yield* Git.use((git) => git.commit(addCommit.message, options.rootDir));
+		yield* Git.use((gitClient) =>
+			gitClient.add(changesetPath, options.rootDir),
+		);
+		yield* Git.use((gitClient) =>
+			gitClient.commit(addCommit.message, options.rootDir),
+		);
 	}
 	if (options.input.open === true) {
-		yield* ProcessExecution.use((process) =>
-			process.spawnDetached({
+		yield* ProcessExecution.use((processExecution) =>
+			processExecution.spawnDetached({
 				command: "editor",
 				args: [changesetPath],
 			}),
@@ -158,26 +165,31 @@ export const addCommand = Effect.fnUntraced(function* (
 		return yield* addCommandWithDraft(rootDir, input);
 	}
 	const { workspace, config } = yield* loadWorkspaceContext(rootDir);
-	const changedPackages = yield* ChangedPackageDetection.use((detection) =>
-		detection.detectVersionableChangedPackages({
-			cwd: rootDir,
-			config,
-			ref: input.sinceRef,
-		}),
+	const changedPackages = yield* ChangedPackageDetection.use(
+		(changedPackageDetection) =>
+			changedPackageDetection.detectVersionableChangedPackages({
+				cwd: rootDir,
+				config,
+				ref: input.sinceRef,
+			}),
 	);
-	const versionablePackages = yield* Effect.filter(workspace.packages, (pkg) =>
-		PackageVersionabilityPolicy.use((policy) =>
-			policy.shouldSkip(pkg, config),
-		).pipe(Effect.map((skip) => !skip)),
+	const versionablePackages = yield* Effect.filter(
+		workspace.packages,
+		(workspacePackage) =>
+			PackageVersionabilityPolicy.use((packageVersionabilityPolicy) =>
+				packageVersionabilityPolicy.shouldSkip(workspacePackage, config),
+			).pipe(Effect.map((skip) => !skip)),
 	);
 	const selectedPackages = yield* Prompt.run(
 		Prompt.multiSelect({
 			message: "Which packages would you like to include?",
-			choices: versionablePackages.map((pkg) => ({
-				title: pkg.packageJson.name,
-				value: pkg.packageJson.name,
+			choices: versionablePackages.map((workspacePackage) => ({
+				title: workspacePackage.packageJson.name,
+				value: workspacePackage.packageJson.name,
 				selected: changedPackages.some(
-					(changed) => changed.packageJson.name === pkg.packageJson.name,
+					(changedPackage) =>
+						changedPackage.packageJson.name ===
+						workspacePackage.packageJson.name,
 				),
 			})),
 		}),
@@ -222,15 +234,15 @@ export const versionCommand = Effect.fnUntraced(function* (
 	input: VersionCommandInput = {},
 ) {
 	const { workspace, config } = yield* loadWorkspaceContext(rootDir);
-	const preState = yield* PreReleaseStateManager.use((pre) =>
-		pre.read(rootDir),
+	const preState = yield* PreReleaseStateManager.use((preReleaseStateManager) =>
+		preReleaseStateManager.read(rootDir),
 	);
-	const changesets = yield* ChangesetCatalogReader.use((reader) =>
-		reader.readAll(rootDir),
+	const changesets = yield* ChangesetCatalogReader.use(
+		(changesetCatalogReader) => changesetCatalogReader.readAll(rootDir),
 	);
 	const versionMode = input.versionMode ?? defaultVersionMode;
-	const plan = yield* ReleasePlanAssembler.use((assembler) =>
-		assembler.assemble({
+	const plan = yield* ReleasePlanAssembler.use((releasePlanAssembler) =>
+		releasePlanAssembler.assemble({
 			changesets,
 			workspace,
 			config,
@@ -239,21 +251,34 @@ export const versionCommand = Effect.fnUntraced(function* (
 			versionMode,
 		}),
 	);
-	yield* ChangelogGenerator.use((changelog) =>
-		changelog.generateEntries({
+	const changelogEntries = yield* ChangelogGenerator.use((changelogGenerator) =>
+		changelogGenerator.generateEntries({
 			changesets: plan.changesets,
 			releases: plan.releases,
 			changelogConfig: config.changelog,
 		}),
 	);
-	yield* ReleasePlanApplier.use((applier) =>
-		applier.apply({ rootDir, workspace, config, plan }),
+	yield* ReleasePlanApplier.use((releasePlanApplier) =>
+		releasePlanApplier.apply({
+			rootDir,
+			workspace,
+			config,
+			plan,
+			changelogEntries,
+		}),
 	);
-	const versionCommit = yield* ChangesetCommitHooks.use((hooks) =>
-		hooks.resolveVersionCommitMessage({ rootDir, plan, config }),
+	const versionCommit = yield* ChangesetCommitHooks.use(
+		(changesetCommitHooks) =>
+			changesetCommitHooks.resolveVersionCommitMessage({
+				rootDir,
+				plan,
+				config,
+			}),
 	);
 	if (versionCommit !== undefined) {
-		yield* Git.use((git) => git.commit(versionCommit.message, rootDir));
+		yield* Git.use((gitClient) =>
+			gitClient.commit(versionCommit.message, rootDir),
+		);
 	}
 	return plan;
 });
@@ -263,14 +288,14 @@ export const publishCommand = Effect.fnUntraced(function* (
 	input: PublishCommandInput = {},
 ) {
 	const { workspace, config } = yield* loadWorkspaceContext(rootDir);
-	const preState = yield* PreReleaseStateManager.use((pre) =>
-		pre.read(rootDir),
+	const preState = yield* PreReleaseStateManager.use((preReleaseStateManager) =>
+		preReleaseStateManager.read(rootDir),
 	);
-	const changesets = yield* ChangesetCatalogReader.use((reader) =>
-		reader.readAll(rootDir),
+	const changesets = yield* ChangesetCatalogReader.use(
+		(changesetCatalogReader) => changesetCatalogReader.readAll(rootDir),
 	);
-	const plan = yield* ReleasePlanAssembler.use((assembler) =>
-		assembler.assemble({
+	const plan = yield* ReleasePlanAssembler.use((releasePlanAssembler) =>
+		releasePlanAssembler.assemble({
 			changesets,
 			workspace,
 			config,
@@ -278,10 +303,12 @@ export const publishCommand = Effect.fnUntraced(function* (
 			versionMode: defaultVersionMode,
 		}),
 	);
-	yield* RegistryPublish.use((publish) =>
-		publish.publish({
+	yield* RegistryPublish.use((registryPublish) =>
+		registryPublish.publish({
 			releases: plan.releases,
+			workspace,
 			cwd: rootDir,
+			access: config.access,
 			tag: input.distTag,
 			otp: input.otp,
 			skipGitTags: input.skipGitTags,
@@ -289,8 +316,8 @@ export const publishCommand = Effect.fnUntraced(function* (
 	);
 	if (input.skipGitTags !== true) {
 		for (const release of plan.releases) {
-			yield* Git.use((git) =>
-				git.tag(`${release.name}@${release.newVersion}`, rootDir),
+			yield* Git.use((gitClient) =>
+				gitClient.tag(`${release.name}@${release.newVersion}`, rootDir),
 			);
 		}
 	}
@@ -302,8 +329,8 @@ export const statusCommand = Effect.fnUntraced(function* (
 	input: StatusCommandInput = {},
 ) {
 	const { config } = yield* loadWorkspaceContext(rootDir);
-	const plan = yield* ChangesetStatusReporter.use((reporter) =>
-		reporter.report({
+	const plan = yield* ChangesetStatusReporter.use((changesetStatusReporter) =>
+		changesetStatusReporter.report({
 			rootDir,
 			config,
 			sinceRef: input.sinceRef,
@@ -333,17 +360,19 @@ export const preCommand = Effect.fnUntraced(function* (
 	input: PreCommandInput,
 ) {
 	if (input.action === "enter") {
-		yield* PreReleaseStateManager.use((pre) =>
-			pre.enter(rootDir, input.tag ?? "next"),
+		yield* PreReleaseStateManager.use((preReleaseStateManager) =>
+			preReleaseStateManager.enter(rootDir, input.tag ?? "next"),
 		);
 		return;
 	}
-	yield* PreReleaseStateManager.use((pre) => pre.exit(rootDir));
+	yield* PreReleaseStateManager.use((preReleaseStateManager) =>
+		preReleaseStateManager.exit(rootDir),
+	);
 });
 
 export const tagCommand = Effect.fnUntraced(function* (rootDir: string) {
 	const { workspace } = yield* loadWorkspaceContext(rootDir);
-	return yield* PackageGitTagger.use((tagger) =>
-		tagger.tagWorkspacePackages({ cwd: rootDir, workspace }),
+	return yield* PackageGitTagger.use((packageGitTagger) =>
+		packageGitTagger.tagWorkspacePackages({ cwd: rootDir, workspace }),
 	);
 });

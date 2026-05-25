@@ -7,8 +7,8 @@ import { Git } from "../services/Git.ts";
 
 const make = Effect.gen(function* () {
 	const filesystem = yield* Filesystem;
-	const parser = yield* ChangesetDocumentParser;
-	const git = yield* Git;
+	const changesetDocumentParser = yield* ChangesetDocumentParser;
+	const gitClient = yield* Git;
 
 	const readMarkdownFiles = Effect.fnUntraced(function* (rootDir: string) {
 		const changesetBase = `${rootDir}/.changeset`;
@@ -24,15 +24,18 @@ const make = Effect.gen(function* () {
 	const readAll = Effect.fnUntraced(function* (rootDir: string) {
 		const files = yield* readMarkdownFiles(rootDir);
 		const markdownFiles = files.filter(
-			(file) => !file.startsWith(".") && file.endsWith(".md"),
+			(file) =>
+				!file.startsWith(".") && file !== "README.md" && file.endsWith(".md"),
 		);
 		const changesets: Array<ParsedChangesetDocument> = [];
 		for (const file of markdownFiles) {
-			const id = file.replace(/\.md$/, "");
+			const changesetId = file.replace(/\.md$/, "");
 			const contents = yield* filesystem.readUtf8(
 				`${rootDir}/.changeset/${file}`,
 			);
-			changesets.push(yield* parser.parseFile(id, contents));
+			changesets.push(
+				yield* changesetDocumentParser.parseFile(changesetId, contents),
+			);
 		}
 		return changesets;
 	});
@@ -42,7 +45,7 @@ const make = Effect.gen(function* () {
 		sinceRef: string,
 	) {
 		const files = yield* readMarkdownFiles(rootDir);
-		const changed = yield* git.getChangedChangesetFilesSinceRef({
+		const changed = yield* gitClient.getChangedChangesetFilesSinceRef({
 			cwd: rootDir,
 			ref: sinceRef,
 		});
@@ -51,15 +54,19 @@ const make = Effect.gen(function* () {
 		);
 		const markdownFiles = files.filter(
 			(file) =>
-				file.endsWith(".md") && changedIds.has(file.replace(/\.md$/, "")),
+				file !== "README.md" &&
+				file.endsWith(".md") &&
+				changedIds.has(file.replace(/\.md$/, "")),
 		);
 		const changesets: Array<ParsedChangesetDocument> = [];
 		for (const file of markdownFiles) {
-			const id = file.replace(/\.md$/, "");
+			const changesetId = file.replace(/\.md$/, "");
 			const contents = yield* filesystem.readUtf8(
 				`${rootDir}/.changeset/${file}`,
 			);
-			changesets.push(yield* parser.parseFile(id, contents));
+			changesets.push(
+				yield* changesetDocumentParser.parseFile(changesetId, contents),
+			);
 		}
 		return changesets;
 	});

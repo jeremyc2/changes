@@ -8,12 +8,23 @@ export class ProcessExecutionError extends Schema.TaggedErrorClass<ProcessExecut
 	},
 ) {}
 
+export type ProcessResult = {
+	readonly code: number;
+	readonly stdout: string;
+	readonly stderr: string;
+};
+
 /**
  * Spawns external processes (e.g. opening an editor for `--open`).
  */
 export class ProcessExecution extends Context.Service<
 	ProcessExecution,
 	{
+		readonly run: (options: {
+			readonly command: string;
+			readonly args: ReadonlyArray<string>;
+			readonly cwd: string;
+		}) => Effect.Effect<ProcessResult, ProcessExecutionError>;
 		readonly spawnDetached: (options: {
 			readonly command: string;
 			readonly args: ReadonlyArray<string>;

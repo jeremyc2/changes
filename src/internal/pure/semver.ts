@@ -7,6 +7,7 @@ export type ParsedSemver = {
 	readonly prerelease: ReadonlyArray<string | number>;
 };
 
+// Captures semver major/minor/patch plus optional prerelease/build metadata.
 const semverPattern =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?(?:\+[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*)?$/;
 
@@ -149,6 +150,7 @@ const parseRangePart = (
 	if (trimmed === "" || trimmed === "*") {
 		return undefined;
 	}
+	// Splits an optional semver range operator from the version it constrains.
 	const operatorMatch = /^(\^|~|>=|>|<=|<|=)?(.+)$/.exec(trimmed);
 	if (operatorMatch === null) {
 		return undefined;
@@ -219,7 +221,7 @@ export const satisfiesSemver = (version: string, range: string): boolean => {
 		return ranges.every((rangePart) => {
 			const parsedRange = parseRangePart(rangePart);
 			if (parsedRange === undefined) {
-				return true;
+				return rangePart === "*";
 			}
 			return satisfiesOperator(
 				parsedVersion,

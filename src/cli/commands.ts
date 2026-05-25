@@ -10,9 +10,9 @@ import {
 } from "../commands/index.ts";
 import { snapshotVersionMode } from "../domain/version-mode.ts";
 
-const cwd = () => process.cwd();
+const currentWorkingDirectory = () => process.cwd();
 
-const add = Command.make(
+const addCliCommand = Command.make(
 	"add",
 	{
 		since: Flag.optional(Flag.string("since")),
@@ -21,7 +21,7 @@ const add = Command.make(
 		empty: Flag.boolean("empty").pipe(Flag.withDefault(false)),
 	},
 	(config) =>
-		addCommand(cwd(), {
+		addCommand(currentWorkingDirectory(), {
 			sinceRef: config.since._tag === "Some" ? config.since.value : undefined,
 			message:
 				config.message._tag === "Some" ? config.message.value : undefined,
@@ -30,18 +30,18 @@ const add = Command.make(
 		}),
 ).pipe(Command.withDescription("Add a new changeset"));
 
-const init = Command.make("init", {}, () => initCommand(cwd())).pipe(
-	Command.withDescription("Initialize changesets in the project"),
-);
+const initCliCommand = Command.make("init", {}, () =>
+	initCommand(currentWorkingDirectory()),
+).pipe(Command.withDescription("Initialize changesets in the project"));
 
-const version = Command.make(
+const versionCliCommand = Command.make(
 	"version",
 	{
 		ignore: Flag.optional(Flag.string("ignore")),
 		snapshot: Flag.boolean("snapshot").pipe(Flag.withDefault(false)),
 	},
 	(config) =>
-		versionCommand(cwd(), {
+		versionCommand(currentWorkingDirectory(), {
 			ignoredPackages:
 				config.ignore._tag === "Some"
 					? config.ignore.value.split(",").map((value) => value.trim())
@@ -50,7 +50,7 @@ const version = Command.make(
 		}),
 ).pipe(Command.withDescription("Version packages based on changesets"));
 
-const publish = Command.make(
+const publishCliCommand = Command.make(
 	"publish",
 	{
 		tag: Flag.optional(Flag.string("tag")),
@@ -58,14 +58,14 @@ const publish = Command.make(
 		noGitTag: Flag.boolean("no-git-tag").pipe(Flag.withDefault(false)),
 	},
 	(config) =>
-		publishCommand(cwd(), {
+		publishCommand(currentWorkingDirectory(), {
 			distTag: config.tag._tag === "Some" ? config.tag.value : undefined,
 			otp: config.otp._tag === "Some" ? config.otp.value : undefined,
 			skipGitTags: config.noGitTag,
 		}),
 ).pipe(Command.withDescription("Publish packages to npm"));
 
-const status = Command.make(
+const statusCliCommand = Command.make(
 	"status",
 	{
 		since: Flag.optional(Flag.string("since")),
@@ -73,7 +73,7 @@ const status = Command.make(
 		output: Flag.optional(Flag.string("output")),
 	},
 	(config) =>
-		statusCommand(cwd(), {
+		statusCommand(currentWorkingDirectory(), {
 			sinceRef: config.since._tag === "Some" ? config.since.value : undefined,
 			verbose: config.verbose,
 			outputPath:
@@ -81,29 +81,38 @@ const status = Command.make(
 		}),
 ).pipe(Command.withDescription("Report changeset status"));
 
-const preEnter = Command.make(
+const preEnterCliCommand = Command.make(
 	"enter",
 	{
 		tag: Argument.string("tag").pipe(Argument.withDefault("next")),
 	},
-	(config) => preCommand(cwd(), { action: "enter", tag: config.tag }),
+	(config) =>
+		preCommand(currentWorkingDirectory(), { action: "enter", tag: config.tag }),
 );
 
-const preExit = Command.make("exit", {}, () =>
-	preCommand(cwd(), { action: "exit" }),
+const preExitCliCommand = Command.make("exit", {}, () =>
+	preCommand(currentWorkingDirectory(), { action: "exit" }),
 );
 
-const pre = Command.make("pre", {}).pipe(
-	Command.withSubcommands([preEnter, preExit]),
+const preCliCommand = Command.make("pre", {}).pipe(
+	Command.withSubcommands([preEnterCliCommand, preExitCliCommand]),
 	Command.withDescription("Manage prerelease mode"),
 );
 
-const tag = Command.make("tag", {}, () => tagCommand(cwd())).pipe(
-	Command.withDescription("Create git tags for package versions"),
-);
+const tagCliCommand = Command.make("tag", {}, () =>
+	tagCommand(currentWorkingDirectory()),
+).pipe(Command.withDescription("Create git tags for package versions"));
 
 export const cli = Command.make("changes").pipe(
-	Command.withSubcommands([init, add, version, publish, status, pre, tag]),
+	Command.withSubcommands([
+		initCliCommand,
+		addCliCommand,
+		versionCliCommand,
+		publishCliCommand,
+		statusCliCommand,
+		preCliCommand,
+		tagCliCommand,
+	]),
 	Command.withDescription("Manage versioning and publishing with changesets"),
 );
 

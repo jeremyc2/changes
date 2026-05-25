@@ -6,10 +6,11 @@ import { ReadableChangesetId } from "../../src/services/ReadableChangesetId.ts";
 layer(readableChangesetIdLayer)("ReadableChangesetId", (it) => {
 	it.effect("generate returns hyphenated lowercase ids by default", () =>
 		Effect.gen(function* () {
-			const id = yield* ReadableChangesetId.use((service) =>
-				service.generate(),
+			const changesetId = yield* ReadableChangesetId.use(
+				(readableChangesetId) => readableChangesetId.generate(),
 			);
-			assert.match(id, /^[a-z]+-[a-z]+-[a-z]+$/);
+			// Matches three lowercase alphabetic words separated by hyphens.
+			assert.match(changesetId, /^[a-z]+-[a-z]+-[a-z]+$/);
 		}),
 	);
 });

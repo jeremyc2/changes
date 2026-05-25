@@ -6,12 +6,14 @@ import {
 	PreReleaseStateManager,
 } from "../services/PreReleaseStateManager.ts";
 import type { PreReleaseState } from "../services/ReleasePlanAssembler.ts";
+import { WorkspacePackageDiscovery } from "../services/WorkspacePackageDiscovery.ts";
 import { encodeJsonStringLine, parseJsonString } from "./pure/json-codec.ts";
 
 const preStatePath = (rootDir: string) => `${rootDir}/.changeset/pre.json`;
 
 const make = Effect.gen(function* () {
 	const filesystem = yield* Filesystem;
+	const workspacePackageDiscovery = yield* WorkspacePackageDiscovery;
 
 	const readFile = Effect.fnUntraced(function* (rootDir: string) {
 		const path = preStatePath(rootDir);
@@ -25,11 +27,17 @@ const make = Effect.gen(function* () {
 
 	const readInitialVersions = Effect.fnUntraced(function* (rootDir: string) {
 		const initialVersions: Record<string, string> = {};
-		const rootManifest = parseJsonString(
-			yield* filesystem.readUtf8(`${rootDir}/package.json`),
-		) as { readonly name?: string; readonly version?: string };
-		if (rootManifest.name !== undefined && rootManifest.version !== undefined) {
-			initialVersions[rootManifest.name] = rootManifest.version;
+		const workspace = yield* workspacePackageDiscovery.discover(rootDir).pipe(
+			Effect.mapError(
+				(cause) =>
+					new PreReleaseStateError({
+						message: cause.message,
+					}),
+			),
+		);
+		for (const workspacePackage of workspace.packages) {
+			initialVersions[workspacePackage.packageJson.name] =
+				workspacePackage.packageJson.version;
 		}
 		return initialVersions;
 	});
@@ -66,6 +74,7 @@ const make = Effect.gen(function* () {
 				initialVersions,
 				changesets: existing?.changesets ?? [],
 			};
+			yield* filesystem.ensureDirectory(`${rootDir}/.changeset`);
 			yield* filesystem.writeUtf8(
 				preStatePath(rootDir),
 				encodeJsonStringLine(nextState),

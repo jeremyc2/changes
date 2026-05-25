@@ -35,14 +35,18 @@ const make = Effect.gen(function* () {
 	}) {
 		const versionMode = options.versionMode ?? { _tag: "default" as const };
 		const packagesByName = new Map<string, WorkspacePackage>(
-			options.workspace.packages.map((pkg) => [pkg.packageJson.name, pkg]),
+			options.workspace.packages.map((workspacePackage) => [
+				workspacePackage.packageJson.name,
+				workspacePackage,
+			]),
 		);
-		const shouldSkip = (pkg: WorkspacePackage): boolean =>
-			options.config.ignore.includes(pkg.packageJson.name) ||
-			(pkg.packageJson.private === true &&
+		const shouldSkip = (workspacePackage: WorkspacePackage): boolean =>
+			options.config.ignore.includes(workspacePackage.packageJson.name) ||
+			(workspacePackage.packageJson.private === true &&
 				options.config.privatePackages.version !== true) ||
-			pkg.packageJson.version === undefined ||
-			(options.ignoredPackages?.includes(pkg.packageJson.name) ?? false);
+			workspacePackage.packageJson.version === undefined ||
+			(options.ignoredPackages?.includes(workspacePackage.packageJson.name) ??
+				false);
 
 		const relevantChangesets = filterRelevantChangesets(
 			options.changesets,
@@ -84,15 +88,18 @@ const make = Effect.gen(function* () {
 				: undefined;
 		const comprehensiveReleases: Array<ComprehensiveRelease> = [];
 		for (const release of releases.values()) {
+			const calculatedVersion = yield* versionIncrement.increment({
+				oldVersion: release.oldVersion,
+				bump: release.type,
+				preState: options.preState,
+				packageName: release.name,
+			});
 			const newVersion =
-				snapshotSuffix !== undefined
-					? `0.0.0-${snapshotSuffix}`
-					: yield* versionIncrement.increment({
-							oldVersion: release.oldVersion,
-							bump: release.type,
-							preState: options.preState,
-							packageName: release.name,
-						});
+				snapshotSuffix === undefined || release.type === "none"
+					? calculatedVersion
+					: options.config.snapshot?.useCalculatedVersion === true
+						? `${calculatedVersion}-${snapshotSuffix}`
+						: `0.0.0-${snapshotSuffix}`;
 			comprehensiveReleases.push({
 				name: release.name,
 				type: release.type,

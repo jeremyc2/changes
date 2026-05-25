@@ -7,16 +7,16 @@ import { ReadableChangesetId } from "../services/ReadableChangesetId.ts";
 
 const make = Effect.gen(function* () {
 	const filesystem = yield* Filesystem;
-	const parser = yield* ChangesetDocumentParser;
-	const formatter = yield* MarkdownFormatter;
-	const readableId = yield* ReadableChangesetId;
+	const changesetDocumentParser = yield* ChangesetDocumentParser;
+	const markdownFormatter = yield* MarkdownFormatter;
+	const readableChangesetId = yield* ReadableChangesetId;
 
 	const write = Effect.fnUntraced(function* (
 		rootDir: string,
 		draft: Parameters<ChangesetDocumentWriter["Service"]["write"]>[1],
 		config: Parameters<ChangesetDocumentWriter["Service"]["write"]>[2],
 	) {
-		const changesetId = yield* readableId.generate({
+		const changesetId = yield* readableChangesetId.generate({
 			separator: "-",
 			capitalizeWords: false,
 			descriptorCount: 1,
@@ -24,11 +24,11 @@ const make = Effect.gen(function* () {
 		const changesetBase = `${rootDir}/.changeset`;
 		yield* filesystem.ensureDirectory(changesetBase);
 		const changesetPath = `${changesetBase}/${changesetId}.md`;
-		const formatted = yield* parser.format(draft);
+		const formatted = yield* changesetDocumentParser.format(draft);
 		const output =
 			config.prettier === false
 				? formatted
-				: yield* formatter.formatMarkdown(formatted, changesetPath);
+				: yield* markdownFormatter.formatMarkdown(formatted, changesetPath);
 		yield* filesystem.writeUtf8(changesetPath, output);
 		return changesetPath;
 	});

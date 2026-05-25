@@ -1,6 +1,7 @@
 import { Context, type Effect } from "effect";
 import type { ChangesetConfig } from "../domain/changeset-config.ts";
 import type { WorkspaceRoot } from "../domain/workspace-package.ts";
+import type { ChangelogEntry } from "./ChangelogGenerator.ts";
 import type { FilesystemError } from "./Filesystem.ts";
 import type { ReleasePlan } from "./ReleasePlanAssembler.ts";
 
@@ -17,6 +18,7 @@ export class ReleasePlanApplier extends Context.Service<
 			readonly workspace: WorkspaceRoot;
 			readonly config: ChangesetConfig;
 			readonly plan: ReleasePlan;
+			readonly changelogEntries: ReadonlyArray<ChangelogEntry>;
 		}) => Effect.Effect<void, FilesystemError>;
 	}
 >()("changes/services/ReleasePlanApplier") {}

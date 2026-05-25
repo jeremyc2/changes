@@ -47,23 +47,26 @@ const buildDependencyGraph = (
 ): Map<string, ReadonlyArray<string>> => {
 	const packagesByName = new Map<string, WorkspacePackage>();
 	packagesByName.set(rootPackage.packageJson.name, rootPackage);
-	for (const pkg of workspacePackages) {
-		packagesByName.set(pkg.packageJson.name, pkg);
+	for (const workspacePackage of workspacePackages) {
+		packagesByName.set(workspacePackage.packageJson.name, workspacePackage);
 	}
 	const relativePathsByName = new Map<string, string>();
 	relativePathsByName.set(rootPackage.packageJson.name, ".");
-	for (const pkg of workspacePackages) {
+	for (const workspacePackage of workspacePackages) {
 		relativePathsByName.set(
-			pkg.packageJson.name,
-			pkg.dir.replace(`${rootPackage.dir}/`, ""),
+			workspacePackage.packageJson.name,
+			workspacePackage.dir.replace(`${rootPackage.dir}/`, ""),
 		);
 	}
 	const graph = new Map<string, ReadonlyArray<string>>();
 	const queue = [rootPackage, ...workspacePackages];
-	for (const pkg of queue) {
-		const { name } = pkg.packageJson;
+	for (const workspacePackage of queue) {
+		const { name } = workspacePackage.packageJson;
 		const dependencies: Array<string> = [];
-		const allDependencies = getAllDependencies(pkg.packageJson, false);
+		const allDependencies = getAllDependencies(
+			workspacePackage.packageJson,
+			true,
+		);
 		for (const [depName, rawDepRange] of allDependencies) {
 			const match = packagesByName.get(depName);
 			if (match === undefined) {
@@ -72,7 +75,7 @@ const buildDependencyGraph = (
 			let depRange = rawDepRange;
 			const usesWorkspaceRange = depRange.startsWith("workspace:");
 			if (usesWorkspaceRange) {
-				depRange = depRange.replace(/^workspace:/, "");
+				depRange = depRange.slice("workspace:".length);
 				if (depRange === "*" || depRange === "^" || depRange === "~") {
 					dependencies.push(depName);
 					continue;

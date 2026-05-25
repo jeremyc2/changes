@@ -2,10 +2,10 @@ import { Effect, FileSystem, Layer } from "effect";
 import { Filesystem, FilesystemError } from "../services/Filesystem.ts";
 
 const make = Effect.gen(function* () {
-	const fs = yield* FileSystem.FileSystem;
+	const fileSystem = yield* FileSystem.FileSystem;
 	return Filesystem.of({
 		readUtf8: (path) =>
-			fs.readFileString(path).pipe(
+			fileSystem.readFileString(path).pipe(
 				Effect.mapError(
 					(error) =>
 						new FilesystemError({
@@ -15,7 +15,7 @@ const make = Effect.gen(function* () {
 				),
 			),
 		writeUtf8: (path, contents) =>
-			fs.writeFileString(path, contents).pipe(
+			fileSystem.writeFileString(path, contents).pipe(
 				Effect.mapError(
 					(error) =>
 						new FilesystemError({
@@ -25,9 +25,9 @@ const make = Effect.gen(function* () {
 				),
 			),
 		exists: (path) =>
-			fs.exists(path).pipe(Effect.catch(() => Effect.succeed(false))),
+			fileSystem.exists(path).pipe(Effect.catch(() => Effect.succeed(false))),
 		readDirectory: (path) =>
-			fs.readDirectory(path).pipe(
+			fileSystem.readDirectory(path).pipe(
 				Effect.mapError(
 					(error) =>
 						new FilesystemError({
@@ -37,7 +37,7 @@ const make = Effect.gen(function* () {
 				),
 			),
 		ensureDirectory: (path) =>
-			fs.makeDirectory(path, { recursive: true }).pipe(
+			fileSystem.makeDirectory(path, { recursive: true }).pipe(
 				Effect.mapError(
 					(error) =>
 						new FilesystemError({
@@ -47,7 +47,7 @@ const make = Effect.gen(function* () {
 				),
 			),
 		remove: (path) =>
-			fs.remove(path).pipe(
+			fileSystem.remove(path).pipe(
 				Effect.mapError(
 					(error) =>
 						new FilesystemError({

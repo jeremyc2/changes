@@ -6,7 +6,7 @@ import type {
 import type { VersionMode } from "../domain/version-mode.ts";
 import type { WorkspacePackage } from "../domain/workspace-package.ts";
 import type { PreReleaseState } from "../services/ReleasePlanAssembler.ts";
-import { parseSemver } from "./pure/semver.ts";
+import { parseSemver, satisfiesSemver } from "./pure/semver.ts";
 
 export type InternalRelease = {
 	name: string;
@@ -22,6 +22,12 @@ const bumpPriority: Record<VersionType, number> = {
 	major: 3,
 };
 
+const dependentDependencyTypes = [
+	"dependencies",
+	"peerDependencies",
+	"optionalDependencies",
+] as const;
+
 const maxBump = (left: VersionType, right: VersionType): VersionType =>
 	bumpPriority[left] >= bumpPriority[right] ? left : right;
 
@@ -33,8 +39,8 @@ export const flattenReleases = (
 	const releases = new Map<string, InternalRelease>();
 	for (const changeset of changesets) {
 		for (const release of changeset.releases) {
-			const pkg = packagesByName.get(release.name);
-			if (pkg === undefined || shouldSkip(pkg)) {
+			const workspacePackage = packagesByName.get(release.name);
+			if (workspacePackage === undefined || shouldSkip(workspacePackage)) {
 				continue;
 			}
 			const existing = releases.get(release.name);
@@ -42,7 +48,7 @@ export const flattenReleases = (
 				releases.set(release.name, {
 					name: release.name,
 					type: release.type,
-					oldVersion: pkg.packageJson.version,
+					oldVersion: workspacePackage.packageJson.version,
 					changesets: [changeset.id],
 				});
 				continue;
@@ -68,11 +74,11 @@ export const getCurrentHighestVersion = (
 ): string => {
 	let highest = "0.0.0";
 	for (const name of packageNames) {
-		const pkg = packagesByName.get(name);
-		if (pkg === undefined) {
+		const workspacePackage = packagesByName.get(name);
+		if (workspacePackage === undefined) {
 			continue;
 		}
-		const current = pkg.packageJson.version;
+		const current = workspacePackage.packageJson.version;
 		if (compareVersions(current, highest) > 0) {
 			highest = current;
 		}
@@ -112,8 +118,8 @@ export const applyFixedGroups = (
 		const highestType = getHighestReleaseType(releasing);
 		const highestVersion = getCurrentHighestVersion(group, packagesByName);
 		for (const pkgName of group) {
-			const pkg = packagesByName.get(pkgName);
-			if (pkg === undefined || shouldSkip(pkg)) {
+			const workspacePackage = packagesByName.get(pkgName);
+			if (workspacePackage === undefined || shouldSkip(workspacePackage)) {
 				continue;
 			}
 			const existing = releases.get(pkgName);
@@ -188,6 +194,16 @@ export const determineDependents = (
 			if (dependentPackage === undefined || shouldSkip(dependentPackage)) {
 				continue;
 			}
+			if (
+				!shouldBumpDependent({
+					dependentPackage,
+					dependencyName: nextRelease.name,
+					dependencyOldVersion: nextRelease.oldVersion,
+					dependencyNewVersion: releaseNewVersion(nextRelease),
+				})
+			) {
+				continue;
+			}
 			const existing = releases.get(dependent);
 			const bumpType: VersionType =
 				nextRelease.type === "major" || nextRelease.type === "minor"
@@ -213,6 +229,84 @@ export const determineDependents = (
 		}
 	}
 	return updated;
+};
+
+const releaseNewVersion = (release: InternalRelease): string => {
+	const parsed = parseSemver(release.oldVersion);
+	if (release.type === "none" || parsed === undefined) {
+		return release.oldVersion;
+	}
+	switch (release.type) {
+		case "major":
+			return `${parsed.major + 1}.0.0`;
+		case "minor":
+			return `${parsed.major}.${parsed.minor + 1}.0`;
+		case "patch":
+			return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`;
+	}
+};
+
+const dependencyRangeFor = (
+	workspacePackage: WorkspacePackage,
+	dependencyName: string,
+): string | undefined => {
+	for (const dependencyType of dependentDependencyTypes) {
+		const range =
+			workspacePackage.packageJson[dependencyType]?.[dependencyName];
+		if (range !== undefined) {
+			return range;
+		}
+	}
+	return undefined;
+};
+
+const comparableDependencyRange = (
+	range: string,
+	dependencyOldVersion: string,
+): string | undefined => {
+	if (range.startsWith("file:") || range.startsWith("link:")) {
+		return undefined;
+	}
+	if (!range.startsWith("workspace:")) {
+		return range;
+	}
+	const workspaceRange = range.slice("workspace:".length);
+	if (workspaceRange === "*") {
+		return "*";
+	}
+	if (workspaceRange === "^" || workspaceRange === "~") {
+		return `${workspaceRange}${dependencyOldVersion}`;
+	}
+	if (workspaceRange === "") {
+		return undefined;
+	}
+	return workspaceRange;
+};
+
+const shouldBumpDependent = (options: {
+	readonly dependentPackage: WorkspacePackage;
+	readonly dependencyName: string;
+	readonly dependencyOldVersion: string;
+	readonly dependencyNewVersion: string;
+}): boolean => {
+	const range = dependencyRangeFor(
+		options.dependentPackage,
+		options.dependencyName,
+	);
+	if (range === undefined) {
+		return false;
+	}
+	const comparableRange = comparableDependencyRange(
+		range,
+		options.dependencyOldVersion,
+	);
+	if (comparableRange === undefined) {
+		return false;
+	}
+	if (range === "workspace:*") {
+		return true;
+	}
+	return !satisfiesSemver(options.dependencyNewVersion, comparableRange);
 };
 
 export const getSnapshotSuffix = (
