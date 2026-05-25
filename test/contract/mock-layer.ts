@@ -1,0 +1,176 @@
+import { Effect, Layer } from "effect";
+import {
+	defaultVersionMode,
+	snapshotVersionMode,
+} from "../../src/domain/version-mode.ts";
+import { ChangedPackageDetection } from "../../src/services/ChangedPackageDetection.ts";
+import { ChangelogGenerator } from "../../src/services/ChangelogGenerator.ts";
+import { ChangesetCatalogReader } from "../../src/services/ChangesetCatalogReader.ts";
+import { ChangesetCommitHooks } from "../../src/services/ChangesetCommitHooks.ts";
+import { ChangesetConfigReader } from "../../src/services/ChangesetConfigReader.ts";
+import { ChangesetDocumentWriter } from "../../src/services/ChangesetDocumentWriter.ts";
+import { ChangesetStatusReporter } from "../../src/services/ChangesetStatusReporter.ts";
+import { ChangesetWorkspaceInit } from "../../src/services/ChangesetWorkspaceInit.ts";
+import { CliOutput } from "../../src/services/CliOutput.ts";
+import { Filesystem } from "../../src/services/Filesystem.ts";
+import { Git } from "../../src/services/Git.ts";
+import { InteractivePrompts } from "../../src/services/InteractivePrompts.ts";
+import { PackageGitTagger } from "../../src/services/PackageGitTagger.ts";
+import { PackageVersionabilityPolicy } from "../../src/services/PackageVersionabilityPolicy.ts";
+import { PreReleaseStateManager } from "../../src/services/PreReleaseStateManager.ts";
+import { ProcessExecution } from "../../src/services/ProcessExecution.ts";
+import { RegistryPublish } from "../../src/services/RegistryPublish.ts";
+import { ReleasePlanApplier } from "../../src/services/ReleasePlanApplier.ts";
+import {
+	type PreReleaseState,
+	ReleasePlanAssembler,
+} from "../../src/services/ReleasePlanAssembler.ts";
+import { WorkspacePackageDiscovery } from "../../src/services/WorkspacePackageDiscovery.ts";
+import {
+	rootDir,
+	stubConfig,
+	stubDraft,
+	stubReleasePlan,
+	stubWorkspace,
+} from "./fixtures.ts";
+
+const noop = Effect.sync(() => {});
+const noopFn = (_?: unknown, __?: unknown) => noop;
+
+/** User-facing CLI services only — internal seams stay out. */
+export const cliContractLayer = Layer.mergeAll(
+	Layer.succeed(
+		ChangesetWorkspaceInit,
+		ChangesetWorkspaceInit.of({ scaffold: noopFn }),
+	),
+	Layer.succeed(
+		WorkspacePackageDiscovery,
+		WorkspacePackageDiscovery.of({
+			discover: () => Effect.succeed(stubWorkspace),
+		}),
+	),
+	Layer.succeed(
+		ChangesetConfigReader,
+		ChangesetConfigReader.of({
+			read: () => Effect.succeed(stubConfig),
+		}),
+	),
+	Layer.succeed(
+		ChangedPackageDetection,
+		ChangedPackageDetection.of({
+			detectVersionableChangedPackages: () => {
+				const firstPackage = stubWorkspace.packages[0];
+				return Effect.succeed(firstPackage === undefined ? [] : [firstPackage]);
+			},
+		}),
+	),
+	Layer.succeed(
+		PackageVersionabilityPolicy,
+		PackageVersionabilityPolicy.of({
+			shouldSkip: () => Effect.succeed(false),
+		}),
+	),
+	Layer.succeed(
+		InteractivePrompts,
+		InteractivePrompts.of({
+			selectPackages: () => Effect.succeed(["pkg-a"]),
+			selectBumpType: () => Effect.succeed("patch" as const),
+			askSummary: () => Effect.succeed("contract summary"),
+			confirm: () => Effect.succeed(true),
+		}),
+	),
+	Layer.succeed(
+		ChangesetDocumentWriter,
+		ChangesetDocumentWriter.of({
+			write: () => Effect.succeed(`${rootDir}/.changeset/stub-slug.md`),
+		}),
+	),
+	Layer.succeed(
+		ChangesetCommitHooks,
+		ChangesetCommitHooks.of({
+			resolveAddCommitMessage: () => Effect.sync((): undefined => undefined),
+			resolveVersionCommitMessage: () =>
+				Effect.sync((): undefined => undefined),
+		}),
+	),
+	Layer.succeed(
+		CliOutput,
+		CliOutput.of({
+			info: noopFn,
+			warn: noopFn,
+			error: noopFn,
+			log: noopFn,
+			success: noopFn,
+		}),
+	),
+	Layer.succeed(
+		Git,
+		Git.of({
+			add: noopFn,
+			commit: noopFn,
+			getChangedChangesetFilesSinceRef: () => Effect.succeed([]),
+			getChangedFilesSinceRef: () => Effect.succeed([]),
+			tag: noopFn,
+		}),
+	),
+	Layer.succeed(
+		ProcessExecution,
+		ProcessExecution.of({ spawnDetached: noopFn }),
+	),
+	Layer.succeed(
+		PreReleaseStateManager,
+		PreReleaseStateManager.of({
+			read: () => Effect.sync((): PreReleaseState | undefined => undefined),
+			enter: noopFn,
+			exit: noopFn,
+		}),
+	),
+	Layer.succeed(
+		ChangesetCatalogReader,
+		ChangesetCatalogReader.of({
+			readAll: () => Effect.succeed([{ ...stubDraft, id: "stub-changeset" }]),
+			readSinceRef: () => Effect.succeed([]),
+		}),
+	),
+	Layer.succeed(
+		ReleasePlanAssembler,
+		ReleasePlanAssembler.of({
+			assemble: (options) =>
+				Effect.succeed(
+					stubReleasePlan(options.versionMode ?? defaultVersionMode),
+				),
+		}),
+	),
+	Layer.succeed(
+		ChangelogGenerator,
+		ChangelogGenerator.of({
+			generateEntries: () => Effect.succeed([]),
+		}),
+	),
+	Layer.succeed(ReleasePlanApplier, ReleasePlanApplier.of({ apply: noopFn })),
+	Layer.succeed(
+		ChangesetStatusReporter,
+		ChangesetStatusReporter.of({
+			report: () => Effect.succeed(stubReleasePlan()),
+		}),
+	),
+	Layer.succeed(
+		Filesystem,
+		Filesystem.of({
+			readUtf8: () => Effect.succeed(""),
+			writeUtf8: noopFn,
+			exists: () => Effect.succeed(false),
+			readDirectory: () => Effect.succeed([]),
+			ensureDirectory: noopFn,
+		}),
+	),
+	Layer.succeed(RegistryPublish, RegistryPublish.of({ publish: noopFn })),
+	Layer.succeed(
+		PackageGitTagger,
+		PackageGitTagger.of({
+			tagWorkspacePackages: () => Effect.succeed(["pkg-a@1.0.0"]),
+		}),
+	),
+);
+
+export const snapshotVersionModeForContract = snapshotVersionMode("contract");
