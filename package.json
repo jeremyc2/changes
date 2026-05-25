@@ -6,20 +6,24 @@
 	"scripts": {
 		"typecheck": "tsgo",
 		"check": "bun --bun biome check --write",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"references:update": "git submodule update --init --recursive",
 		"prepare": "effect-tsgo patch",
-		"chore:update": "bun update --latest && bun add effect@beta"
+		"chore:update": "bun update --latest && bun add effect@beta && bun add @effect/vitest@beta"
 	},
 	"dependencies": {
 		"effect": "^4.0.0-beta.70"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",
-		"@effect/tsgo": "^0.7.4",
-		"@types/bun": "latest",
-		"@typescript/native-preview": "^7.0.0-dev.20260519.1"
+		"@effect/tsgo": "^0.11.0",
+		"@effect/vitest": "^4.0.0-beta.70",
+		"@types/bun": "^1.3.14",
+		"@typescript/native-preview": "^7.0.0-dev.20260525.1",
+		"vitest": "^4.1.7"
 	},
 	"peerDependencies": {
-		"typescript": "^5"
+		"typescript": "^6.0.3"
 	}
 }

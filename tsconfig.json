@@ -79,6 +79,7 @@
 					"missingLayerContext": "error",
 					"missingReturnYieldStar": "error",
 					"missingStarInYieldEffectGen": "error",
+					"multipleCatchTag": "error",
 					"multipleEffectProvide": "error",
 					"nestedEffectGenYield": "error",
 					"newPromise": "error",
@@ -113,6 +114,6 @@
 			}
 		]
 	},
-	"exclude": ["reference_repositories/**/*"],
+	"exclude": ["reference_repositories/**/*", "tmp/**/*"],
 	"$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
 }
