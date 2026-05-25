@@ -14,7 +14,7 @@
 		"test:watch": "bun --bun vitest",
 		"references:update": "git submodule update --init --recursive",
 		"prepare": "effect-tsgo patch",
-		"chore:update": "bun update --latest && bun add effect@beta && bun add @effect/vitest@beta && bun add @effect/platform-bun@beta"
+		"chore:update": "bun update --latest && bun add effect@beta @effect/vitest@beta @effect/platform-bun@beta"
 	},
 	"dependencies": {
 		"@effect/platform-bun": "^4.0.0-beta.70",
