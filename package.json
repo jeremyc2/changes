@@ -3,16 +3,20 @@
 	"description": "Changesets CLI rewritten in Effect v4 and with no external dependencies.",
 	"module": "index.ts",
 	"type": "module",
+	"bin": {
+		"changes": "./index.ts"
+	},
 	"scripts": {
 		"typecheck": "tsgo",
 		"check": "bun --bun biome check --write",
-		"test": "vitest run",
-		"test:watch": "vitest",
+		"test": "bun --bun vitest run",
+		"test:watch": "bun --bun vitest",
 		"references:update": "git submodule update --init --recursive",
 		"prepare": "effect-tsgo patch",
-		"chore:update": "bun update --latest && bun add effect@beta && bun add @effect/vitest@beta"
+		"chore:update": "bun update --latest && bun add effect@beta && bun add @effect/vitest@beta && bun add @effect/platform-bun@beta"
 	},
 	"dependencies": {
+		"@effect/platform-bun": "^4.0.0-beta.70",
 		"effect": "^4.0.0-beta.70"
 	},
 	"devDependencies": {
