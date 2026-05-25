@@ -26,6 +26,7 @@ export class Filesystem extends Context.Service<
 		readonly ensureDirectory: (
 			path: string,
 		) => Effect.Effect<void, FilesystemError>;
+		readonly remove: (path: string) => Effect.Effect<void, FilesystemError>;
 	}
 >()("changes/services/Filesystem") {}
 

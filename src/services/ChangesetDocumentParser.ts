@@ -22,7 +22,9 @@ export class ChangesetDocumentParser extends Context.Service<
 		readonly parse: (
 			contents: string,
 		) => Effect.Effect<ChangesetDraft, ChangesetDocumentParseError>;
-		readonly format: (draft: ChangesetDraft) => Effect.Effect<string>;
+		readonly format: (
+			draft: ChangesetDraft,
+		) => Effect.Effect<string, ChangesetDocumentParseError>;
 		readonly parseFile: (
 			id: string,
 			contents: string,

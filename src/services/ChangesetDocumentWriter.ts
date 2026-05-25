@@ -1,6 +1,8 @@
 import { Context, type Effect } from "effect";
 import type { ChangesetConfig } from "../domain/changeset-config.ts";
 import type { ChangesetDraft } from "../domain/changeset-document.ts";
+import type { ChangesetDocumentParseError } from "./ChangesetDocumentParser.ts";
+import type { FilesystemError } from "./Filesystem.ts";
 
 /**
  * Writes a new changeset markdown file under `.changeset/`.
@@ -14,7 +16,7 @@ export class ChangesetDocumentWriter extends Context.Service<
 			rootDir: string,
 			draft: ChangesetDraft,
 			config: Pick<ChangesetConfig, "prettier">,
-		) => Effect.Effect<string>;
+		) => Effect.Effect<string, ChangesetDocumentParseError | FilesystemError>;
 	}
 >()("changes/services/ChangesetDocumentWriter") {}
 

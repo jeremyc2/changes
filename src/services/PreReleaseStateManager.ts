@@ -1,4 +1,5 @@
 import { Context, type Effect, Schema } from "effect";
+import type { FilesystemError } from "./Filesystem.ts";
 import type { PreReleaseState } from "./ReleasePlanAssembler.ts";
 
 export class PreReleaseStateError extends Schema.TaggedErrorClass<PreReleaseStateError>()(
@@ -16,14 +17,17 @@ export class PreReleaseStateManager extends Context.Service<
 	{
 		readonly read: (
 			rootDir: string,
-		) => Effect.Effect<PreReleaseState | undefined, PreReleaseStateError>;
+		) => Effect.Effect<
+			PreReleaseState | undefined,
+			PreReleaseStateError | FilesystemError
+		>;
 		readonly enter: (
 			rootDir: string,
 			tag: string,
-		) => Effect.Effect<void, PreReleaseStateError>;
+		) => Effect.Effect<void, PreReleaseStateError | FilesystemError>;
 		readonly exit: (
 			rootDir: string,
-		) => Effect.Effect<void, PreReleaseStateError>;
+		) => Effect.Effect<void, PreReleaseStateError | FilesystemError>;
 	}
 >()("changes/services/PreReleaseStateManager") {}
 

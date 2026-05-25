@@ -1,6 +1,8 @@
 import { Context, type Effect } from "effect";
 import type { ChangesetConfig } from "../domain/changeset-config.ts";
 import type { WorkspacePackage } from "../domain/workspace-package.ts";
+import type { GitError } from "./Git.ts";
+import type { WorkspaceDiscoveryError } from "./WorkspacePackageDiscovery.ts";
 
 /**
  * Finds workspace packages with changes since a git ref.
@@ -14,7 +16,10 @@ export class ChangedPackageDetection extends Context.Service<
 			readonly cwd: string;
 			readonly config: ChangesetConfig;
 			readonly ref?: string;
-		}) => Effect.Effect<ReadonlyArray<WorkspacePackage>>;
+		}) => Effect.Effect<
+			ReadonlyArray<WorkspacePackage>,
+			GitError | WorkspaceDiscoveryError
+		>;
 	}
 >()("changes/services/ChangedPackageDetection") {}
 

@@ -14,7 +14,6 @@ import { ChangesetWorkspaceInit } from "../../src/services/ChangesetWorkspaceIni
 import { CliOutput } from "../../src/services/CliOutput.ts";
 import { Filesystem } from "../../src/services/Filesystem.ts";
 import { Git } from "../../src/services/Git.ts";
-import { InteractivePrompts } from "../../src/services/InteractivePrompts.ts";
 import { PackageGitTagger } from "../../src/services/PackageGitTagger.ts";
 import { PackageVersionabilityPolicy } from "../../src/services/PackageVersionabilityPolicy.ts";
 import { PreReleaseStateManager } from "../../src/services/PreReleaseStateManager.ts";
@@ -68,15 +67,6 @@ export const cliContractLayer = Layer.mergeAll(
 		PackageVersionabilityPolicy,
 		PackageVersionabilityPolicy.of({
 			shouldSkip: () => Effect.succeed(false),
-		}),
-	),
-	Layer.succeed(
-		InteractivePrompts,
-		InteractivePrompts.of({
-			selectPackages: () => Effect.succeed(["pkg-a"]),
-			selectBumpType: () => Effect.succeed("patch" as const),
-			askSummary: () => Effect.succeed("contract summary"),
-			confirm: () => Effect.succeed(true),
 		}),
 	),
 	Layer.succeed(
@@ -162,6 +152,7 @@ export const cliContractLayer = Layer.mergeAll(
 			exists: () => Effect.succeed(false),
 			readDirectory: () => Effect.succeed([]),
 			ensureDirectory: noopFn,
+			remove: noopFn,
 		}),
 	),
 	Layer.succeed(RegistryPublish, RegistryPublish.of({ publish: noopFn })),

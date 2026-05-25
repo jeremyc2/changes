@@ -1,3 +1,4 @@
+import type { AddCommandInput } from "../../src/commands/index.ts";
 import type { ChangesetConfig } from "../../src/domain/changeset-config.ts";
 import type { ChangesetDraft } from "../../src/domain/changeset-document.ts";
 import {
@@ -48,6 +49,16 @@ export const stubDraft: ChangesetDraft = {
 	summary: "contract summary",
 	releases: [{ name: "pkg-a", type: "patch" }],
 };
+
+/** Default non-interactive input for contract tests of `addCommandWithDraft`. */
+export const contractAddInput = (
+	overrides: AddCommandInput = {},
+): AddCommandInput => ({
+	releases: stubDraft.releases,
+	message: stubDraft.summary,
+	confirmed: true,
+	...overrides,
+});
 
 export const stubReleasePlan = (
 	versionMode: VersionMode = defaultVersionMode,

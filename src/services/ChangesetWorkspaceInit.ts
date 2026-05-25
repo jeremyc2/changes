@@ -1,4 +1,5 @@
 import { Context, type Effect, Schema } from "effect";
+import type { FilesystemError } from "./Filesystem.ts";
 
 export class ChangesetWorkspaceInitError extends Schema.TaggedErrorClass<ChangesetWorkspaceInitError>()(
 	"ChangesetWorkspaceInitError",
@@ -13,7 +14,7 @@ export class ChangesetWorkspaceInit extends Context.Service<
 	{
 		readonly scaffold: (
 			rootDir: string,
-		) => Effect.Effect<void, ChangesetWorkspaceInitError>;
+		) => Effect.Effect<void, ChangesetWorkspaceInitError | FilesystemError>;
 	}
 >()("changes/services/ChangesetWorkspaceInit") {}
 
