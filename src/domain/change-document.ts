@@ -5,14 +5,14 @@ export type Release = {
 	readonly type: VersionType;
 };
 
-/** A changeset before it has been written to disk. */
-export type ChangesetDraft = {
+/** A change before it has been written to disk. */
+export type ChangeDraft = {
 	readonly summary: string;
 	readonly releases: ReadonlyArray<Release>;
 };
 
-/** A changeset read from a `.changeset/*.md` file. */
-export type ParsedChangesetDocument = ChangesetDraft & {
+/** A change read from a `.changes/*.md` file. */
+export type ParsedChangeDocument = ChangeDraft & {
 	readonly id: string;
 };
 

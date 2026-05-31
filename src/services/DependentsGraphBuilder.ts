@@ -11,7 +11,7 @@ export class DependentsGraphError extends Schema.TaggedErrorClass<DependentsGrap
 /**
  * Builds a map of package name → packages that depend on it.
  *
- * Replaces `@changesets/get-dependents-graph`.
+ * Replaces upstream dependent graph building.
  */
 export class DependentsGraphBuilder extends Context.Service<
 	DependentsGraphBuilder,

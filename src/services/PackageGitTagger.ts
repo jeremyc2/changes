@@ -9,7 +9,7 @@ export class PackageGitTaggerError extends Schema.TaggedErrorClass<PackageGitTag
 /**
  * Creates git tags for current package versions without publishing to a registry.
  *
- * Replaces the `changeset tag` command in `@changesets/cli`.
+ * Replaces upstream tag command behavior.
  */
 export class PackageGitTagger extends Context.Service<
 	PackageGitTagger,

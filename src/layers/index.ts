@@ -1,14 +1,14 @@
 import { layer as bunServicesLayer } from "@effect/platform-bun/BunServices";
 import { Layer } from "effect";
+import { layer as changeCatalogReaderLayer } from "../internal/ChangeCatalogReaderLive.ts";
+import { layer as changeCommitHooksLayer } from "../internal/ChangeCommitHooksLive.ts";
+import { layer as changeConfigReaderLayer } from "../internal/ChangeConfigReaderLive.ts";
+import { layer as changeDocumentParserLayer } from "../internal/ChangeDocumentParserLive.ts";
+import { layer as changeDocumentWriterLayer } from "../internal/ChangeDocumentWriterLive.ts";
 import { layer as changedPackageDetectionLayer } from "../internal/ChangedPackageDetectionLive.ts";
 import { layer as changelogGeneratorLayer } from "../internal/ChangelogGeneratorLive.ts";
-import { layer as changesetCatalogReaderLayer } from "../internal/ChangesetCatalogReaderLive.ts";
-import { layer as changesetCommitHooksLayer } from "../internal/ChangesetCommitHooksLive.ts";
-import { layer as changesetConfigReaderLayer } from "../internal/ChangesetConfigReaderLive.ts";
-import { layer as changesetDocumentParserLayer } from "../internal/ChangesetDocumentParserLive.ts";
-import { layer as changesetDocumentWriterLayer } from "../internal/ChangesetDocumentWriterLive.ts";
-import { layer as changesetStatusReporterLayer } from "../internal/ChangesetStatusReporterLive.ts";
-import { layer as changesetWorkspaceInitLayer } from "../internal/ChangesetWorkspaceInitLive.ts";
+import { layer as changeStatusReporterLayer } from "../internal/ChangeStatusReporterLive.ts";
+import { layer as changeWorkspaceInitLayer } from "../internal/ChangeWorkspaceInitLive.ts";
 import { layer as cliOutputLayer } from "../internal/CliOutputLive.ts";
 import { layer as dependentsGraphBuilderLayer } from "../internal/DependentsGraphBuilderLive.ts";
 import { layer as filesystemLayer } from "../internal/FilesystemLive.ts";
@@ -21,13 +21,13 @@ import { layer as processExecutionLayer } from "../internal/ProcessExecutionLive
 import { layer as registryPublishLayer } from "../internal/RegistryPublishLive.ts";
 import { layer as releasePlanApplierLayer } from "../internal/ReleasePlanApplierLive.ts";
 import { layer as releasePlanAssemblerLayer } from "../internal/ReleasePlanAssemblerLive.ts";
-import { layer as readableChangesetIdLayer } from "../internal/readable-changeset-id/layer.ts";
+import { layer as readableChangeIdLayer } from "../internal/readable-change-id/layer.ts";
 import { layer as versionIncrementLayer } from "../internal/VersionIncrementLive.ts";
 import { layer as workspacePackageDiscoveryLayer } from "../internal/WorkspacePackageDiscoveryLive.ts";
 
 const infrastructureLayer = Layer.mergeAll(
-	readableChangesetIdLayer,
-	changesetDocumentParserLayer,
+	readableChangeIdLayer,
+	changeDocumentParserLayer,
 	markdownFormatterLayer,
 	versionIncrementLayer,
 	dependentsGraphBuilderLayer,
@@ -41,16 +41,16 @@ const infrastructureLayer = Layer.mergeAll(
 export const cliLiveLayer = packageGitTaggerLayer.pipe(
 	Layer.provideMerge(registryPublishLayer),
 	Layer.provideMerge(changedPackageDetectionLayer),
-	Layer.provideMerge(changesetStatusReporterLayer),
-	Layer.provideMerge(changesetCommitHooksLayer),
+	Layer.provideMerge(changeStatusReporterLayer),
+	Layer.provideMerge(changeCommitHooksLayer),
 	Layer.provideMerge(changelogGeneratorLayer),
 	Layer.provideMerge(releasePlanApplierLayer),
 	Layer.provideMerge(releasePlanAssemblerLayer),
-	Layer.provideMerge(changesetCatalogReaderLayer),
-	Layer.provideMerge(changesetDocumentWriterLayer),
+	Layer.provideMerge(changeCatalogReaderLayer),
+	Layer.provideMerge(changeDocumentWriterLayer),
 	Layer.provideMerge(preReleaseStateManagerLayer),
-	Layer.provideMerge(changesetWorkspaceInitLayer),
-	Layer.provideMerge(changesetConfigReaderLayer),
+	Layer.provideMerge(changeWorkspaceInitLayer),
+	Layer.provideMerge(changeConfigReaderLayer),
 	Layer.provideMerge(workspacePackageDiscoveryLayer),
 	Layer.provideMerge(infrastructureLayer),
 );

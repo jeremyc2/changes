@@ -20,16 +20,13 @@ import {
 	versionCommand,
 } from "./contract/workflows.ts";
 
-layer(cliContractLayer)("CLI contract", (it) => {
-	it.effect("init scaffolds a changeset workspace", () => initCommand(rootDir));
+layer(cliContractLayer)("command contract", (it) => {
+	it.effect("init scaffolds a change workspace", () => initCommand(rootDir));
 
-	it.effect("add records a changeset for selected packages", () =>
+	it.effect("add records a change for selected packages", () =>
 		Effect.gen(function* () {
 			const result = yield* addCommandWithDraft(rootDir, contractAddInput());
-			assert.strictEqual(
-				result.changesetPath,
-				`${rootDir}/.changeset/stub-slug.md`,
-			);
+			assert.strictEqual(result.changePath, `${rootDir}/.changes/stub-slug.md`);
 			assert.strictEqual(result.draft.summary, "contract summary");
 			assert.deepStrictEqual(result.draft.releases, [
 				{ name: "pkg-a", type: "patch" },
@@ -55,7 +52,7 @@ layer(cliContractLayer)("CLI contract", (it) => {
 		addCommandWithDraft(rootDir, contractAddInput({ sinceRef: "develop" })),
 	);
 
-	it.effect("add --empty writes an empty changeset", () =>
+	it.effect("add --empty writes an empty change", () =>
 		Effect.gen(function* () {
 			const result = yield* addCommandWithDraft(rootDir, { empty: true });
 			assert.deepStrictEqual(result.draft.releases, []);
@@ -140,7 +137,7 @@ layer(cliContractLayer)("CLI contract", (it) => {
 	);
 });
 
-it("mock layer only wires user-facing CLI services", () => {
+it("mock layer only wires user-facing command services", () => {
 	assert.isDefined(cliContractLayer);
 	assert.isDefined(snapshotVersionMode("contract"));
 });

@@ -1,8 +1,8 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect } from "effect";
 import { versionCommand } from "../../src/commands/index.ts";
-import type { ChangesetConfig } from "../../src/domain/changeset-config.ts";
-import type { ChangesetDraft } from "../../src/domain/changeset-document.ts";
+import type { ChangeConfig } from "../../src/domain/change-config.ts";
+import type { ChangeDraft } from "../../src/domain/change-document.ts";
 import { snapshotVersionMode } from "../../src/domain/version-mode.ts";
 import type { PackageManifest } from "../../src/domain/workspace-package.ts";
 import {
@@ -48,25 +48,25 @@ const writePackage = (
 		yield* writeJson(filesystem, `${packageDir}/package.json`, manifest);
 	});
 
-const writeChangeset = (
+const writeChange = (
 	filesystem: Filesystem["Service"],
 	rootDir: string,
 	id: string,
-	changeset: ChangesetDraft,
+	change: ChangeDraft,
 ) =>
 	filesystem.writeUtf8(
-		`${rootDir}/.changeset/${id}.md`,
-		`---\n${changeset.releases
+		`${rootDir}/.changes/${id}.md`,
+		`---\n${change.releases
 			.map((release) => `"${release.name}": ${release.type}`)
-			.join("\n")}\n---\n\n${changeset.summary}\n`,
+			.join("\n")}\n---\n\n${change.summary}\n`,
 	);
 
 const setupWorkspace = (options: {
 	readonly name: string;
 	readonly workspaces?: ReadonlyArray<string>;
 	readonly packages: Readonly<Record<string, PackageManifest>>;
-	readonly changesets: ReadonlyArray<ChangesetDraft>;
-	readonly config?: Partial<ChangesetConfig>;
+	readonly changes: ReadonlyArray<ChangeDraft>;
+	readonly config?: Partial<ChangeConfig>;
 }) =>
 	withTempDirectory(options.name, (directory) =>
 		Effect.gen(function* () {
@@ -75,8 +75,8 @@ const setupWorkspace = (options: {
 				private: true,
 				workspaces: options.workspaces ?? ["packages/*"],
 			});
-			yield* filesystem.ensureDirectory(`${directory}/.changeset`);
-			yield* writeJson(filesystem, `${directory}/.changeset/config.json`, {
+			yield* filesystem.ensureDirectory(`${directory}/.changes`);
+			yield* writeJson(filesystem, `${directory}/.changes/config.json`, {
 				changelog: false,
 				commit: false,
 				...options.config,
@@ -85,13 +85,8 @@ const setupWorkspace = (options: {
 				yield* writePackage(filesystem, directory, packagePath, manifest);
 			}
 			let index = 0;
-			for (const changeset of options.changesets) {
-				yield* writeChangeset(
-					filesystem,
-					directory,
-					`fixture-${index++}`,
-					changeset,
-				);
+			for (const change of options.changes) {
+				yield* writeChange(filesystem, directory, `fixture-${index++}`, change);
 			}
 			return directory;
 		}),
@@ -128,7 +123,7 @@ const readPackagesByPath = (
 	});
 
 layer(appLayer)("version fixture parity", (it) => {
-	it.effect("bumps released packages from a single changeset", () =>
+	it.effect("bumps released packages from a single change", () =>
 		Effect.gen(function* () {
 			const filesystem = yield* Filesystem;
 			yield* setupWorkspace({
@@ -141,7 +136,7 @@ layer(appLayer)("version fixture parity", (it) => {
 					},
 					"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "This is a summary too",
 						releases: [
@@ -166,7 +161,7 @@ layer(appLayer)("version fixture parity", (it) => {
 		}),
 	);
 
-	it.effect("deletes consumed changeset files after versioning", () =>
+	it.effect("deletes consumed change files after versioning", () =>
 		Effect.gen(function* () {
 			const filesystem = yield* Filesystem;
 			yield* setupWorkspace({
@@ -174,7 +169,7 @@ layer(appLayer)("version fixture parity", (it) => {
 				packages: {
 					"packages/pkg-a": { name: "pkg-a", version: "1.0.0" },
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "A useful summary",
 						releases: [{ name: "pkg-a", type: "patch" }],
@@ -185,7 +180,7 @@ layer(appLayer)("version fixture parity", (it) => {
 					Effect.gen(function* () {
 						yield* versionCommand(directory);
 						assert.strictEqual(
-							yield* filesystem.exists(`${directory}/.changeset/fixture-0.md`),
+							yield* filesystem.exists(`${directory}/.changes/fixture-0.md`),
 							false,
 						);
 					}),
@@ -209,7 +204,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						},
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "This is not a summary",
 							releases: [{ name: "pkg-b", type: "patch" }],
@@ -257,7 +252,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						},
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "This is a summary",
 							releases: [{ name: "pkg-a", type: "minor" }],
@@ -294,7 +289,7 @@ layer(appLayer)("version fixture parity", (it) => {
 					},
 					"packages/pkg-b": { name: "pkg-b", version: "0.1.0" },
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "This is a summary too",
 						releases: [
@@ -334,7 +329,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						dependencies: { "pkg-a": "latest" },
 					},
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "A very useful summary for the change",
 						releases: [{ name: "pkg-a", type: "major" }],
@@ -376,7 +371,7 @@ layer(appLayer)("version fixture parity", (it) => {
 					},
 					"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "This is a summary too",
 						releases: [
@@ -417,7 +412,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						},
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "A very useful summary for the change",
 							releases: [{ name: "pkg-b", type: "patch" }],
@@ -459,7 +454,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						},
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "A very useful summary for the change",
 							releases: [{ name: "pkg-b", type: "patch" }],
@@ -499,7 +494,7 @@ layer(appLayer)("version fixture parity", (it) => {
 					},
 					"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 				},
-				changesets: [
+				changes: [
 					{
 						summary: "A very useful summary for the change",
 						releases: [{ name: "pkg-b", type: "minor" }],
@@ -541,7 +536,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						},
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "A very useful summary for the first change",
 							releases: [{ name: "pkg-b", type: "patch" }],
@@ -584,7 +579,7 @@ layer(appLayer)("version fixture parity", (it) => {
 						"packages/pkg-b": { name: "pkg-b", version: "1.0.0" },
 						"packages/pkg-c": { name: "pkg-c", version: "1.0.0" },
 					},
-					changesets: [
+					changes: [
 						{
 							summary: "This is a summary too",
 							releases: [

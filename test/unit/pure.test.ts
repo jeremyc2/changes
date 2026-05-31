@@ -1,14 +1,22 @@
 import { assert, it } from "@effect/vitest";
 import {
-	formatChangesetDocument,
-	parseChangesetDocument,
-} from "../../src/internal/pure/changeset-frontmatter.ts";
+	formatChangeDocument,
+	parseChangeDocument,
+} from "../../src/internal/pure/change-frontmatter.ts";
 import { globMatch } from "../../src/internal/pure/glob-match.ts";
+import { encodePrettyJsonStringLine } from "../../src/internal/pure/json-codec.ts";
 import {
 	incSemver,
 	parseSemver,
 	satisfiesSemver,
 } from "../../src/internal/pure/semver.ts";
+
+it("encodePrettyJsonStringLine writes two-space formatted JSON", () => {
+	assert.strictEqual(
+		encodePrettyJsonStringLine({ name: "pkg-a", nested: { enabled: true } }),
+		'{\n  "name": "pkg-a",\n  "nested": {\n    "enabled": true\n  }\n}\n',
+	);
+});
 
 it("incSemver bumps patch versions", () => {
 	assert.strictEqual(incSemver("1.0.0", "patch"), "1.0.1");
@@ -29,8 +37,8 @@ it("satisfiesSemver matches caret ranges", () => {
 	assert.strictEqual(satisfiesSemver("2.0.0", "^1.0.0"), false);
 });
 
-it("parseChangesetDocument reads frontmatter and summary", () => {
-	const parsed = parseChangesetDocument(`---
+it("parseChangeDocument reads frontmatter and summary", () => {
+	const parsed = parseChangeDocument(`---
 "pkg-a": patch
 ---
 
@@ -39,8 +47,8 @@ Hello world`);
 	assert.strictEqual(parsed.summary, "Hello world");
 });
 
-it("formatChangesetDocument writes quoted package names", () => {
-	const formatted = formatChangesetDocument({
+it("formatChangeDocument writes quoted package names", () => {
+	const formatted = formatChangeDocument({
 		summary: "Summary",
 		releases: [{ name: "pkg-a", type: "minor" }],
 	});

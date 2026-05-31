@@ -1,37 +1,34 @@
 import { Effect, Layer, Schema } from "effect";
-import type { ChangesetConfig } from "../domain/changeset-config.ts";
+import type { ChangeConfig } from "../domain/change-config.ts";
 import { defaultWrittenConfig } from "../domain/pre-release-state.ts";
 import type { WorkspaceRoot } from "../domain/workspace-package.ts";
 import {
-	ChangesetConfigReadError,
-	ChangesetConfigReader,
-} from "../services/ChangesetConfigReader.ts";
+	ChangeConfigReadError,
+	ChangeConfigReader,
+} from "../services/ChangeConfigReader.ts";
 import { Filesystem } from "../services/Filesystem.ts";
 import { globMatch, globMatchAny } from "./pure/glob-match.ts";
 import { parseJsonString } from "./pure/json-codec.ts";
 
-const normalizeChangelog = (value: unknown): ChangesetConfig["changelog"] => {
+const normalizeChangelog = (value: unknown): ChangeConfig["changelog"] => {
 	if (value === false) {
 		return false;
 	}
-	if (
-		value === "@changesets/cli/changelog" ||
-		value === defaultWrittenConfig.changelog
-	) {
-		return ["@changesets/cli/changelog", null];
+	if (value === defaultWrittenConfig.changelog) {
+		return [defaultWrittenConfig.changelog, null];
 	}
 	return false;
 };
 
-const normalizeCommit = (value: unknown): ChangesetConfig["commit"] => {
+const normalizeCommit = (value: unknown): ChangeConfig["commit"] => {
 	if (value === false) {
 		return false;
 	}
 	if (value === true) {
-		return ["@changesets/cli/commit", { skipCI: "version" }];
+		return ["changes/commit", { skipCI: "version" }];
 	}
-	if (value === "@changesets/cli/commit") {
-		return ["@changesets/cli/commit", null];
+	if (value === "changes/commit") {
+		return ["changes/commit", null];
 	}
 	return false;
 };
@@ -43,11 +40,11 @@ const make = Effect.gen(function* () {
 		rootDir: string,
 		workspace: WorkspaceRoot,
 	) {
-		const configPath = `${rootDir}/.changeset/config.json`;
+		const configPath = `${rootDir}/.changes/config.json`;
 		const exists = yield* filesystem.exists(configPath);
 		if (!exists) {
-			return yield* new ChangesetConfigReadError({
-				message: "Missing .changeset/config.json — run `changeset init` first.",
+			return yield* new ChangeConfigReadError({
+				message: "Missing .changes/config.json — run `changes init` first.",
 			});
 		}
 		const contents = yield* filesystem.readUtf8(configPath);
@@ -69,44 +66,44 @@ const make = Effect.gen(function* () {
 				json["changelog"] ?? defaultWrittenConfig.changelog,
 			),
 			commit: normalizeCommit(json["commit"] ?? defaultWrittenConfig.commit),
-			fixed: (json["fixed"] as ChangesetConfig["fixed"] | undefined) ?? [],
-			linked: (json["linked"] as ChangesetConfig["linked"] | undefined) ?? [],
+			fixed: (json["fixed"] as ChangeConfig["fixed"] | undefined) ?? [],
+			linked: (json["linked"] as ChangeConfig["linked"] | undefined) ?? [],
 			access:
-				(json["access"] as ChangesetConfig["access"] | undefined) ??
+				(json["access"] as ChangeConfig["access"] | undefined) ??
 				defaultWrittenConfig.access,
 			baseBranch:
 				(json["baseBranch"] as string | undefined) ??
 				defaultWrittenConfig.baseBranch,
 			changedFilePatterns:
 				(json["changedFilePatterns"] as
-					| ChangesetConfig["changedFilePatterns"]
+					| ChangeConfig["changedFilePatterns"]
 					| undefined) ?? defaultWrittenConfig.changedFilePatterns,
 			prettier:
 				(json["prettier"] as boolean | undefined) ??
 				defaultWrittenConfig.prettier,
 			privatePackages:
 				(json["privatePackages"] as
-					| ChangesetConfig["privatePackages"]
+					| ChangeConfig["privatePackages"]
 					| undefined) ?? defaultWrittenConfig.privatePackages,
-			ignore: (json["ignore"] as ChangesetConfig["ignore"] | undefined) ?? [],
+			ignore: (json["ignore"] as ChangeConfig["ignore"] | undefined) ?? [],
 			updateInternalDependencies:
 				(json["updateInternalDependencies"] as
-					| ChangesetConfig["updateInternalDependencies"]
+					| ChangeConfig["updateInternalDependencies"]
 					| undefined) ?? defaultWrittenConfig.updateInternalDependencies,
 			bumpVersionsWithWorkspaceProtocolOnly: json[
 				"bumpVersionsWithWorkspaceProtocolOnly"
 			] as boolean | undefined,
-			snapshot: json["snapshot"] as ChangesetConfig["snapshot"] | undefined,
-		} satisfies ChangesetConfig;
+			snapshot: json["snapshot"] as ChangeConfig["snapshot"] | undefined,
+		} satisfies ChangeConfig;
 	});
 
-	return ChangesetConfigReader.of({
+	return ChangeConfigReader.of({
 		read: (rootDir, workspace) =>
 			read(rootDir, workspace).pipe(
 				Effect.mapError((cause) =>
-					Schema.is(ChangesetConfigReadError)(cause)
+					Schema.is(ChangeConfigReadError)(cause)
 						? cause
-						: new ChangesetConfigReadError({
+						: new ChangeConfigReadError({
 								message: cause instanceof Error ? cause.message : String(cause),
 							}),
 				),
@@ -114,4 +111,4 @@ const make = Effect.gen(function* () {
 	});
 });
 
-export const layer = Layer.effect(ChangesetConfigReader, make);
+export const layer = Layer.effect(ChangeConfigReader, make);

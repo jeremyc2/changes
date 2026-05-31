@@ -1,6 +1,6 @@
 import type { AddCommandInput } from "../../src/commands/index.ts";
-import type { ChangesetConfig } from "../../src/domain/changeset-config.ts";
-import type { ChangesetDraft } from "../../src/domain/changeset-document.ts";
+import type { ChangeConfig } from "../../src/domain/change-config.ts";
+import type { ChangeDraft } from "../../src/domain/change-document.ts";
 import {
 	defaultVersionMode,
 	type VersionMode,
@@ -31,7 +31,7 @@ export const stubWorkspace: WorkspaceRoot = {
 	],
 };
 
-export const stubConfig: ChangesetConfig = {
+export const stubConfig: ChangeConfig = {
 	changelog: false,
 	commit: false,
 	fixed: [],
@@ -45,7 +45,7 @@ export const stubConfig: ChangesetConfig = {
 	updateInternalDependencies: "patch",
 };
 
-export const stubDraft: ChangesetDraft = {
+export const stubDraft: ChangeDraft = {
 	summary: "contract summary",
 	releases: [{ name: "pkg-a", type: "patch" }],
 };
@@ -63,7 +63,7 @@ export const contractAddInput = (
 export const stubReleasePlan = (
 	versionMode: VersionMode = defaultVersionMode,
 ): ReleasePlan => ({
-	changesets: [{ ...stubDraft, id: "stub-changeset" }],
+	changes: [{ ...stubDraft, id: "stub-change" }],
 	releases: [
 		{
 			name: "pkg-a",
@@ -71,7 +71,7 @@ export const stubReleasePlan = (
 			oldVersion: "1.0.0",
 			newVersion:
 				versionMode._tag === "snapshot" ? "0.0.0-contract-0000000000" : "1.0.1",
-			changesets: ["stub-changeset"],
+			changes: ["stub-change"],
 		},
 	],
 	preState: undefined,
@@ -80,7 +80,7 @@ export const stubReleasePlan = (
 
 export const statusJsonPayload = (plan: ReleasePlan): string =>
 	JSON.stringify({
-		changesets: plan.changesets.length,
+		changes: plan.changes.length,
 		releases: plan.releases.map((release) => ({
 			name: release.name,
 			newVersion: release.newVersion,

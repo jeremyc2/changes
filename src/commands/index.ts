@@ -1,24 +1,24 @@
 import { Effect } from "effect";
 import { Prompt } from "effect/unstable/cli";
-import type { ChangesetConfig } from "../domain/changeset-config.ts";
+import type { ChangeConfig } from "../domain/change-config.ts";
 import type {
-	ChangesetDraft,
+	ChangeDraft,
 	Release,
 	VersionType,
-} from "../domain/changeset-document.ts";
-import { versionTypes } from "../domain/changeset-document.ts";
+} from "../domain/change-document.ts";
+import { versionTypes } from "../domain/change-document.ts";
 import {
 	defaultVersionMode,
 	type VersionMode,
 } from "../domain/version-mode.ts";
+import { ChangeCatalogReader } from "../services/ChangeCatalogReader.ts";
+import { ChangeCommitHooks } from "../services/ChangeCommitHooks.ts";
+import { ChangeConfigReader } from "../services/ChangeConfigReader.ts";
+import { ChangeDocumentWriter } from "../services/ChangeDocumentWriter.ts";
 import { ChangedPackageDetection } from "../services/ChangedPackageDetection.ts";
 import { ChangelogGenerator } from "../services/ChangelogGenerator.ts";
-import { ChangesetCatalogReader } from "../services/ChangesetCatalogReader.ts";
-import { ChangesetCommitHooks } from "../services/ChangesetCommitHooks.ts";
-import { ChangesetConfigReader } from "../services/ChangesetConfigReader.ts";
-import { ChangesetDocumentWriter } from "../services/ChangesetDocumentWriter.ts";
-import { ChangesetStatusReporter } from "../services/ChangesetStatusReporter.ts";
-import { ChangesetWorkspaceInit } from "../services/ChangesetWorkspaceInit.ts";
+import { ChangeStatusReporter } from "../services/ChangeStatusReporter.ts";
+import { ChangeWorkspaceInit } from "../services/ChangeWorkspaceInit.ts";
 import { CliOutput } from "../services/CliOutput.ts";
 import { Filesystem } from "../services/Filesystem.ts";
 import { Git } from "../services/Git.ts";
@@ -43,8 +43,8 @@ export type AddCommandInput = {
 };
 
 export type AddCommandResult = {
-	readonly changesetPath: string;
-	readonly draft: ChangesetDraft;
+	readonly changePath: string;
+	readonly draft: ChangeDraft;
 };
 
 export type VersionCommandInput = {
@@ -75,54 +75,51 @@ export const loadWorkspaceContext = Effect.fnUntraced(function* (
 	const workspace = yield* WorkspacePackageDiscovery.use(
 		(workspacePackageDiscovery) => workspacePackageDiscovery.discover(rootDir),
 	);
-	const config = yield* ChangesetConfigReader.use((changesetConfigReader) =>
-		changesetConfigReader.read(rootDir, workspace),
+	const config = yield* ChangeConfigReader.use((changeConfigReader) =>
+		changeConfigReader.read(rootDir, workspace),
 	);
 	return { workspace, config };
 });
 
 export const initCommand = Effect.fnUntraced(function* (rootDir: string) {
-	yield* ChangesetWorkspaceInit.use((changesetWorkspaceInit) =>
-		changesetWorkspaceInit.scaffold(rootDir),
+	yield* ChangeWorkspaceInit.use((changeWorkspaceInit) =>
+		changeWorkspaceInit.scaffold(rootDir),
 	);
 });
 
-export const completeAddChangeset = Effect.fnUntraced(function* (options: {
+export const completeAddChange = Effect.fnUntraced(function* (options: {
 	readonly rootDir: string;
 	readonly input: AddCommandInput;
-	readonly config: ChangesetConfig;
+	readonly config: ChangeConfig;
 	readonly summary: string;
 	readonly releases: ReadonlyArray<Release>;
 	readonly confirmed: boolean;
 }) {
 	if (!options.confirmed) {
 		return {
-			changesetPath: "",
+			changePath: "",
 			draft: { summary: "", releases: [] },
 		} satisfies AddCommandResult;
 	}
-	const draft: ChangesetDraft = {
+	const draft: ChangeDraft = {
 		summary: options.summary,
 		releases: options.releases,
 	};
-	const changesetPath = yield* ChangesetDocumentWriter.use(
-		(changesetDocumentWriter) =>
-			changesetDocumentWriter.write(options.rootDir, draft, options.config),
+	const changePath = yield* ChangeDocumentWriter.use((changeDocumentWriter) =>
+		changeDocumentWriter.write(options.rootDir, draft, options.config),
 	);
 	yield* CliOutput.use((cliOutput) =>
-		cliOutput.success(`Changeset added: ${changesetPath}`),
+		cliOutput.success(`Change added: ${changePath}`),
 	);
-	const addCommit = yield* ChangesetCommitHooks.use((changesetCommitHooks) =>
-		changesetCommitHooks.resolveAddCommitMessage({
+	const addCommit = yield* ChangeCommitHooks.use((changeCommitHooks) =>
+		changeCommitHooks.resolveAddCommitMessage({
 			rootDir: options.rootDir,
 			draft,
 			config: options.config,
 		}),
 	);
 	if (addCommit !== undefined) {
-		yield* Git.use((gitClient) =>
-			gitClient.add(changesetPath, options.rootDir),
-		);
+		yield* Git.use((gitClient) => gitClient.add(changePath, options.rootDir));
 		yield* Git.use((gitClient) =>
 			gitClient.commit(addCommit.message, options.rootDir),
 		);
@@ -131,11 +128,11 @@ export const completeAddChangeset = Effect.fnUntraced(function* (options: {
 		yield* ProcessExecution.use((processExecution) =>
 			processExecution.spawnDetached({
 				command: "editor",
-				args: [changesetPath],
+				args: [changePath],
 			}),
 		);
 	}
-	return { changesetPath, draft } satisfies AddCommandResult;
+	return { changePath, draft } satisfies AddCommandResult;
 });
 
 /** Non-interactive `add` when releases (and optionally message/confirmed) are supplied upfront. */
@@ -147,7 +144,7 @@ export const addCommandWithDraft = Effect.fnUntraced(function* (
 	const releases = input.empty === true ? [] : (input.releases ?? []);
 	const summary = input.message ?? "";
 	const confirmed = input.confirmed ?? true;
-	return yield* completeAddChangeset({
+	return yield* completeAddChange({
 		rootDir,
 		input,
 		config,
@@ -217,9 +214,9 @@ export const addCommand = Effect.fnUntraced(function* (
 			}),
 		));
 	const confirmed = yield* Prompt.run(
-		Prompt.confirm({ message: "Is this your desired changeset?" }),
+		Prompt.confirm({ message: "Is this your desired change?" }),
 	);
-	return yield* completeAddChangeset({
+	return yield* completeAddChange({
 		rootDir,
 		input,
 		config,
@@ -237,13 +234,13 @@ export const versionCommand = Effect.fnUntraced(function* (
 	const preState = yield* PreReleaseStateManager.use((preReleaseStateManager) =>
 		preReleaseStateManager.read(rootDir),
 	);
-	const changesets = yield* ChangesetCatalogReader.use(
-		(changesetCatalogReader) => changesetCatalogReader.readAll(rootDir),
+	const changes = yield* ChangeCatalogReader.use((changeCatalogReader) =>
+		changeCatalogReader.readAll(rootDir),
 	);
 	const versionMode = input.versionMode ?? defaultVersionMode;
 	const plan = yield* ReleasePlanAssembler.use((releasePlanAssembler) =>
 		releasePlanAssembler.assemble({
-			changesets,
+			changes,
 			workspace,
 			config,
 			preState,
@@ -253,7 +250,7 @@ export const versionCommand = Effect.fnUntraced(function* (
 	);
 	const changelogEntries = yield* ChangelogGenerator.use((changelogGenerator) =>
 		changelogGenerator.generateEntries({
-			changesets: plan.changesets,
+			changes: plan.changes,
 			releases: plan.releases,
 			changelogConfig: config.changelog,
 		}),
@@ -267,13 +264,12 @@ export const versionCommand = Effect.fnUntraced(function* (
 			changelogEntries,
 		}),
 	);
-	const versionCommit = yield* ChangesetCommitHooks.use(
-		(changesetCommitHooks) =>
-			changesetCommitHooks.resolveVersionCommitMessage({
-				rootDir,
-				plan,
-				config,
-			}),
+	const versionCommit = yield* ChangeCommitHooks.use((changeCommitHooks) =>
+		changeCommitHooks.resolveVersionCommitMessage({
+			rootDir,
+			plan,
+			config,
+		}),
 	);
 	if (versionCommit !== undefined) {
 		yield* Git.use((gitClient) =>
@@ -291,12 +287,12 @@ export const publishCommand = Effect.fnUntraced(function* (
 	const preState = yield* PreReleaseStateManager.use((preReleaseStateManager) =>
 		preReleaseStateManager.read(rootDir),
 	);
-	const changesets = yield* ChangesetCatalogReader.use(
-		(changesetCatalogReader) => changesetCatalogReader.readAll(rootDir),
+	const changes = yield* ChangeCatalogReader.use((changeCatalogReader) =>
+		changeCatalogReader.readAll(rootDir),
 	);
 	const plan = yield* ReleasePlanAssembler.use((releasePlanAssembler) =>
 		releasePlanAssembler.assemble({
-			changesets,
+			changes,
 			workspace,
 			config,
 			preState,
@@ -329,8 +325,8 @@ export const statusCommand = Effect.fnUntraced(function* (
 	input: StatusCommandInput = {},
 ) {
 	const { config } = yield* loadWorkspaceContext(rootDir);
-	const plan = yield* ChangesetStatusReporter.use((changesetStatusReporter) =>
-		changesetStatusReporter.report({
+	const plan = yield* ChangeStatusReporter.use((changeStatusReporter) =>
+		changeStatusReporter.report({
 			rootDir,
 			config,
 			sinceRef: input.sinceRef,
@@ -343,7 +339,7 @@ export const statusCommand = Effect.fnUntraced(function* (
 			filesystem.writeUtf8(
 				outputPath,
 				JSON.stringify({
-					changesets: plan.changesets.length,
+					changes: plan.changes.length,
 					releases: plan.releases.map((release) => ({
 						name: release.name,
 						newVersion: release.newVersion,

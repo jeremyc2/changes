@@ -1,11 +1,11 @@
 # Changes
 
-Changes is an Effect v4 implementation of the Changesets CLI.
+Changes is an Effect v4 implementation of the changes CLI.
 
-It keeps the familiar Changesets workflow: contributors record release intent in
-`.changeset/*.md` files, maintainers combine those files into a release plan,
-then the CLI applies version updates, changelog entries, npm publishing, and git
-tags.
+It keeps the familiar release workflow: contributors record release intent in
+`.changes/*.md` files, maintainers combine those files into a release plan,
+then the changes CLI applies version updates, changelog entries, npm publishing,
+and git tags.
 
 The implementation is deliberately service-oriented. User-facing commands depend
 on Effect services for git, npm publishing, filesystem access, prompts, package
@@ -48,7 +48,7 @@ Install dependencies:
 bun install
 ```
 
-Run the local CLI:
+Run the local changes CLI:
 
 ```sh
 bun dev --help
@@ -71,7 +71,7 @@ Initialize a repository once:
 changes init
 ```
 
-Add a changeset while working on a change:
+Add a change while working on a release-impacting update:
 
 ```sh
 changes add
@@ -83,7 +83,7 @@ Check what would be released:
 changes status --verbose
 ```
 
-Apply the accumulated changesets to package versions and changelogs:
+Apply the accumulated changes to package versions and changelogs:
 
 ```sh
 changes version
@@ -97,9 +97,9 @@ changes publish
 
 Push the release commit and tags from your own git workflow after publishing.
 
-## Changeset Files
+## Change Files
 
-A changeset is a Markdown file under `.changeset/` with frontmatter listing the
+A change file is a Markdown file under `.changes/` with frontmatter listing the
 packages and semver bump types, followed by the release summary:
 
 ```md
@@ -113,7 +113,7 @@ Describe the change in human terms.
 
 Supported bump types are `major`, `minor`, `patch`, and `none`.
 
-An empty changeset is valid when a workflow needs a changeset file but no package
+An empty change file is valid when a workflow needs a change file but no package
 should be released:
 
 ```md
@@ -125,9 +125,9 @@ should be released:
 
 ### `changes init`
 
-Creates `.changeset/config.json` and `.changeset/README.md`.
+Creates `.changes/config.json` and `.changes/README.md`.
 
-The generated config starts with Changesets-style defaults, including
+The generated config starts with changes defaults, including
 `baseBranch: "main"`, changelog generation enabled, commit hooks disabled,
 private packages skipped for versioning and tagging, and `changedFilePatterns`
 set to `["**"]`.
@@ -135,25 +135,25 @@ set to `["**"]`.
 ### `changes add`
 
 Prompts for packages, bump types, and a summary, then writes a new
-`.changeset/<id>.md` file.
+`.changes/<id>.md` file.
 
 Flags:
 
 - `--since <ref>` detects changed packages against a specific git ref instead of
   the configured base branch.
 - `--message <text>` supplies the summary without prompting for it.
-- `--open` opens the created changeset in an editor after writing it.
-- `--empty` writes a changeset with no package releases.
+- `--open` opens the created change file in an editor after writing it.
+- `--empty` writes a change file with no package releases.
 
 If the config enables commit hooks, `add` stages and commits the generated
-changeset file.
+change file.
 
 ### `changes version`
 
-Reads all current changesets, assembles a release plan, updates package
-versions, updates internal dependency ranges including supported `workspace:`
-ranges, appends generated changelog entries when configured, and removes
-consumed changeset files.
+Reads all current changes, assembles a release plan, updates package versions,
+updates internal dependency ranges including supported `workspace:` ranges,
+appends generated changelog entries when configured, and removes consumed change
+files.
 
 Flags:
 
@@ -175,16 +175,15 @@ Flags:
 
 ### `changes status`
 
-Reports unreleased changesets and the releases they imply. Generated
-`.changeset/README.md` files are ignored, and the command fails when there are
-no changesets to report.
+Reports unreleased changes and the releases they imply. Generated
+`.changes/README.md` files are ignored, and the command fails when there are
+no changes to report.
 
 Flags:
 
-- `--since <ref>` only reports changesets changed since a git ref.
-- `--verbose` prints a compact count of changesets and releases.
-- `--output <path>` writes JSON containing the changeset count and release
-  versions.
+- `--since <ref>` only reports changes touched since a git ref.
+- `--verbose` prints a compact count of changes and releases.
+- `--output <path>` writes JSON containing the change count and release versions.
 
 ### `changes pre`
 
@@ -197,7 +196,7 @@ changes pre exit
 
 `enter` accepts an optional tag and defaults to `next`. Entering prerelease mode
 records the initial versions of discovered workspace packages in
-`.changeset/pre.json`.
+`.changes/pre.json`.
 
 ### `changes tag`
 
@@ -206,8 +205,8 @@ Creates git tags for the current package versions. Monorepos use the
 
 ## Configuration
 
-`changes init` writes `.changeset/config.json`. The reader understands these
-Changesets config fields:
+`changes init` writes `.changes/config.json`. The reader understands these
+changes config fields:
 
 - `changelog`
 - `commit`

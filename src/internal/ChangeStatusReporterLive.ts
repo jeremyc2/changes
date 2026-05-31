@@ -1,10 +1,10 @@
 import { Effect, Layer } from "effect";
 import { defaultVersionMode } from "../domain/version-mode.ts";
-import { ChangesetCatalogReader } from "../services/ChangesetCatalogReader.ts";
+import { ChangeCatalogReader } from "../services/ChangeCatalogReader.ts";
 import {
-	ChangesetStatusError,
-	ChangesetStatusReporter,
-} from "../services/ChangesetStatusReporter.ts";
+	ChangeStatusError,
+	ChangeStatusReporter,
+} from "../services/ChangeStatusReporter.ts";
 import { CliOutput } from "../services/CliOutput.ts";
 import { PreReleaseStateManager } from "../services/PreReleaseStateManager.ts";
 import { ReleasePlanAssembler } from "../services/ReleasePlanAssembler.ts";
@@ -13,14 +13,14 @@ import { WorkspacePackageDiscovery } from "../services/WorkspacePackageDiscovery
 const make = Effect.gen(function* () {
 	const workspacePackageDiscovery = yield* WorkspacePackageDiscovery;
 	const preReleaseStateManager = yield* PreReleaseStateManager;
-	const changesetCatalogReader = yield* ChangesetCatalogReader;
+	const changeCatalogReader = yield* ChangeCatalogReader;
 	const releasePlanAssembler = yield* ReleasePlanAssembler;
 	const cliOutput = yield* CliOutput;
 
 	const report = Effect.fnUntraced(function* (options: {
 		readonly rootDir: string;
 		readonly config: Parameters<
-			ChangesetStatusReporter["Service"]["report"]
+			ChangeStatusReporter["Service"]["report"]
 		>[0]["config"];
 		readonly sinceRef?: string;
 		readonly verbose: boolean;
@@ -29,15 +29,15 @@ const make = Effect.gen(function* () {
 			options.rootDir,
 		);
 		const preState = yield* preReleaseStateManager.read(options.rootDir);
-		const changesets =
+		const changes =
 			options.sinceRef === undefined
-				? yield* changesetCatalogReader.readAll(options.rootDir)
-				: yield* changesetCatalogReader.readSinceRef(
+				? yield* changeCatalogReader.readAll(options.rootDir)
+				: yield* changeCatalogReader.readSinceRef(
 						options.rootDir,
 						options.sinceRef,
 					);
 		const plan = yield* releasePlanAssembler.assemble({
-			changesets,
+			changes,
 			workspace,
 			config: options.config,
 			preState,
@@ -45,21 +45,21 @@ const make = Effect.gen(function* () {
 		});
 		if (options.verbose) {
 			yield* cliOutput.info(
-				`${plan.changesets.length} changesets, ${plan.releases.length} releases`,
+				`${plan.changes.length} changes, ${plan.releases.length} releases`,
 			);
 		}
-		if (plan.changesets.length === 0) {
+		if (plan.changes.length === 0) {
 			yield* cliOutput.error(
-				"No changesets found. Run `changes add` or `changes add --empty`.",
+				"No changes found. Run `changes add` or `changes add --empty`.",
 			);
-			return yield* new ChangesetStatusError({
-				message: "No changesets found",
+			return yield* new ChangeStatusError({
+				message: "No changes found",
 			});
 		}
 		return plan;
 	});
 
-	return ChangesetStatusReporter.of({ report });
+	return ChangeStatusReporter.of({ report });
 });
 
-export const layer = Layer.effect(ChangesetStatusReporter, make);
+export const layer = Layer.effect(ChangeStatusReporter, make);

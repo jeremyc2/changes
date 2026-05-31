@@ -10,7 +10,7 @@ export class PreReleaseStateError extends Schema.TaggedErrorClass<PreReleaseStat
 /**
  * Manages pre-release mode (enter / exit / read state).
  *
- * Replaces `@changesets/pre`.
+ * Replaces upstream prerelease state management.
  */
 export class PreReleaseStateManager extends Context.Service<
 	PreReleaseStateManager,

@@ -1,24 +1,24 @@
 import { Effect, Layer } from "effect";
-import type { ChangesetDraft } from "../domain/changeset-document.ts";
+import type { ChangeDraft } from "../domain/change-document.ts";
 import {
-	ChangesetCommitHooks,
-	type ChangesetCommitMessage,
-} from "../services/ChangesetCommitHooks.ts";
+	ChangeCommitHooks,
+	type ChangeCommitMessage,
+} from "../services/ChangeCommitHooks.ts";
 import type { ReleasePlan } from "../services/ReleasePlanAssembler.ts";
 
 const resolveAddCommitMessage = (
-	draft: ChangesetDraft,
-): ChangesetCommitMessage | undefined => {
+	draft: ChangeDraft,
+): ChangeCommitMessage | undefined => {
 	if (draft.releases.length === 0) {
-		return { message: "docs(changesets): empty changeset" };
+		return { message: "docs(changes): empty change" };
 	}
 	const packages = draft.releases.map((release) => release.name).join(", ");
-	return { message: `docs(changesets): ${packages}` };
+	return { message: `docs(changes): ${packages}` };
 };
 
 const resolveVersionCommitMessage = (
 	plan: ReleasePlan,
-): ChangesetCommitMessage | undefined => {
+): ChangeCommitMessage | undefined => {
 	if (plan.releases.length === 0) {
 		return undefined;
 	}
@@ -29,8 +29,8 @@ const resolveVersionCommitMessage = (
 };
 
 export const layer = Layer.succeed(
-	ChangesetCommitHooks,
-	ChangesetCommitHooks.of({
+	ChangeCommitHooks,
+	ChangeCommitHooks.of({
 		resolveAddCommitMessage: (options) =>
 			Effect.sync(() =>
 				options.config.commit === false

@@ -70,7 +70,7 @@ export const layer = Layer.succeed(
 				.map((line) => line.trim())
 				.filter((line) => line !== "");
 		}),
-		getChangedChangesetFilesSinceRef: Effect.fnUntraced(function* (options) {
+		getChangedChangeFilesSinceRef: Effect.fnUntraced(function* (options) {
 			const mergeBase = yield* requireSuccess(
 				["merge-base", options.ref, "HEAD"],
 				options.cwd,
@@ -84,9 +84,7 @@ export const layer = Layer.succeed(
 				.map((line) => line.trim())
 				.filter(
 					(file) =>
-						file !== "" &&
-						file.startsWith(".changeset/") &&
-						file.endsWith(".md"),
+						file !== "" && file.startsWith(".changes/") && file.endsWith(".md"),
 				);
 		}),
 	}),

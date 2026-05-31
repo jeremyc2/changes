@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect";
-import type { ChangesetConfig } from "../domain/changeset-config.ts";
-import type { VersionType } from "../domain/changeset-document.ts";
+import type { ChangeConfig } from "../domain/change-config.ts";
+import type { VersionType } from "../domain/change-document.ts";
 import type { PackageManifest } from "../domain/workspace-package.ts";
 import { Filesystem } from "../services/Filesystem.ts";
 import { ReleasePlanApplier } from "../services/ReleasePlanApplier.ts";
@@ -24,7 +24,7 @@ const bumpPriority: Record<VersionType, number> = {
 
 const shouldUpdateForConfiguredMinimum = (
 	releaseType: VersionType,
-	minimum: ChangesetConfig["updateInternalDependencies"],
+	minimum: ChangeConfig["updateInternalDependencies"],
 ): boolean => bumpPriority[releaseType] >= bumpPriority[minimum];
 
 const stripWorkspaceProtocol = (
@@ -62,7 +62,7 @@ const nextDependencyRange = (options: {
 	readonly currentRange: string;
 	readonly newVersion: string;
 	readonly releaseType: VersionType;
-	readonly config: ChangesetConfig;
+	readonly config: ChangeConfig;
 }): string | undefined => {
 	if (
 		options.currentRange.startsWith("file:") ||
@@ -107,7 +107,7 @@ const updateDependencyRanges = (
 		readonly version: string;
 		readonly type: VersionType;
 	}>,
-	config: ChangesetConfig,
+	config: ChangeConfig,
 ): PackageManifest => {
 	const next = { ...packageJson };
 	for (const depType of dependencyTypes) {
@@ -208,11 +208,11 @@ const make = Effect.gen(function* () {
 				`${existing}${entryHeader}${entry}\n`,
 			);
 		}
-		for (const changeset of options.plan.changesets) {
-			const changesetPath = `${options.rootDir}/.changeset/${changeset.id}.md`;
-			const exists = yield* filesystem.exists(changesetPath);
+		for (const change of options.plan.changes) {
+			const changePath = `${options.rootDir}/.changes/${change.id}.md`;
+			const exists = yield* filesystem.exists(changePath);
 			if (exists) {
-				yield* filesystem.remove(changesetPath);
+				yield* filesystem.remove(changePath);
 			}
 		}
 	});

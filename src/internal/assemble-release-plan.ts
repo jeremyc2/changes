@@ -1,8 +1,8 @@
-import type { ChangesetConfig } from "../domain/changeset-config.ts";
+import type { ChangeConfig } from "../domain/change-config.ts";
 import type {
-	ParsedChangesetDocument,
+	ParsedChangeDocument,
 	VersionType,
-} from "../domain/changeset-document.ts";
+} from "../domain/change-document.ts";
 import type { VersionMode } from "../domain/version-mode.ts";
 import type { WorkspacePackage } from "../domain/workspace-package.ts";
 import type { PreReleaseState } from "../services/ReleasePlanAssembler.ts";
@@ -12,7 +12,7 @@ export type InternalRelease = {
 	name: string;
 	type: VersionType;
 	oldVersion: string;
-	changesets: Array<string>;
+	changes: Array<string>;
 };
 
 const bumpPriority: Record<VersionType, number> = {
@@ -32,13 +32,13 @@ const maxBump = (left: VersionType, right: VersionType): VersionType =>
 	bumpPriority[left] >= bumpPriority[right] ? left : right;
 
 export const flattenReleases = (
-	changesets: ReadonlyArray<ParsedChangesetDocument>,
+	changes: ReadonlyArray<ParsedChangeDocument>,
 	packagesByName: ReadonlyMap<string, WorkspacePackage>,
 	shouldSkip: (pkg: WorkspacePackage) => boolean,
 ): Map<string, InternalRelease> => {
 	const releases = new Map<string, InternalRelease>();
-	for (const changeset of changesets) {
-		for (const release of changeset.releases) {
+	for (const change of changes) {
+		for (const release of change.releases) {
 			const workspacePackage = packagesByName.get(release.name);
 			if (workspacePackage === undefined || shouldSkip(workspacePackage)) {
 				continue;
@@ -49,12 +49,12 @@ export const flattenReleases = (
 					name: release.name,
 					type: release.type,
 					oldVersion: workspacePackage.packageJson.version,
-					changesets: [changeset.id],
+					changes: [change.id],
 				});
 				continue;
 			}
 			existing.type = maxBump(existing.type, release.type);
-			existing.changesets.push(changeset.id);
+			existing.changes.push(change.id);
 		}
 	}
 	return releases;
@@ -104,7 +104,7 @@ const compareVersions = (left: string, right: string): number => {
 export const applyFixedGroups = (
 	releases: Map<string, InternalRelease>,
 	packagesByName: ReadonlyMap<string, WorkspacePackage>,
-	fixed: ChangesetConfig["fixed"],
+	fixed: ChangeConfig["fixed"],
 	shouldSkip: (pkg: WorkspacePackage) => boolean,
 ): boolean => {
 	let updated = false;
@@ -128,7 +128,7 @@ export const applyFixedGroups = (
 					name: pkgName,
 					type: highestType,
 					oldVersion: highestVersion,
-					changesets: [],
+					changes: [],
 				});
 				updated = true;
 				continue;
@@ -149,7 +149,7 @@ export const applyFixedGroups = (
 export const applyLinkedGroups = (
 	releases: Map<string, InternalRelease>,
 	packagesByName: ReadonlyMap<string, WorkspacePackage>,
-	linked: ChangesetConfig["linked"],
+	linked: ChangeConfig["linked"],
 ): boolean => {
 	let updated = false;
 	for (const group of linked) {
@@ -214,7 +214,7 @@ export const determineDependents = (
 					name: dependent,
 					type: bumpType,
 					oldVersion: dependentPackage.packageJson.version,
-					changesets: [],
+					changes: [],
 				};
 				releases.set(dependent, release);
 				queue.push(release);
@@ -322,12 +322,12 @@ export const getSnapshotSuffix = (
 		: `${versionMode.tag}-${datetime}`;
 };
 
-export const filterRelevantChangesets = (
-	changesets: ReadonlyArray<ParsedChangesetDocument>,
+export const filterRelevantChanges = (
+	changes: ReadonlyArray<ParsedChangeDocument>,
 	preState: PreReleaseState | undefined,
-): ReadonlyArray<ParsedChangesetDocument> => {
+): ReadonlyArray<ParsedChangeDocument> => {
 	if (preState !== undefined && preState.mode !== "exit") {
-		return changesets;
+		return changes;
 	}
-	return changesets;
+	return changes;
 };

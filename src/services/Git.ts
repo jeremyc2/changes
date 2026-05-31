@@ -6,9 +6,9 @@ export class GitError extends Schema.TaggedErrorClass<GitError>()("GitError", {
 }) {}
 
 /**
- * Git operations for changeset workflows (stage, commit, diff since ref).
+ * Git operations for change workflows (stage, commit, diff since ref).
  *
- * Replaces `@changesets/git`.
+ * Replaces upstream git operations.
  */
 export class Git extends Context.Service<
 	Git,
@@ -18,7 +18,7 @@ export class Git extends Context.Service<
 			message: string,
 			cwd: string,
 		) => Effect.Effect<void, GitError>;
-		readonly getChangedChangesetFilesSinceRef: (options: {
+		readonly getChangedChangeFilesSinceRef: (options: {
 			readonly cwd: string;
 			readonly ref: string;
 		}) => Effect.Effect<ReadonlyArray<string>, GitError>;

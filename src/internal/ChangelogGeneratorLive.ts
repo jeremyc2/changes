@@ -1,9 +1,9 @@
 import { Effect, Layer } from "effect";
-import type { ParsedChangesetDocument } from "../domain/changeset-document.ts";
+import type { ParsedChangeDocument } from "../domain/change-document.ts";
 import { ChangelogGenerator } from "../services/ChangelogGenerator.ts";
 
-const getReleaseLine = (changeset: ParsedChangesetDocument): string => {
-	const [firstLine, ...futureLines] = changeset.summary
+const getReleaseLine = (change: ParsedChangeDocument): string => {
+	const [firstLine, ...futureLines] = change.summary
 		.split("\n")
 		.map((line) => line.trimEnd());
 	let returnValue = `- ${firstLine}`;
@@ -25,10 +25,10 @@ export const layer = Layer.succeed(
 				readonly entry: string;
 			}> = [];
 			for (const release of options.releases) {
-				const relatedChangesets = options.changesets.filter((changeset) =>
-					release.changesets.includes(changeset.id),
+				const relatedChanges = options.changes.filter((change) =>
+					release.changes.includes(change.id),
 				);
-				const lines = relatedChangesets.map(getReleaseLine);
+				const lines = relatedChanges.map(getReleaseLine);
 				entries.push({
 					packageName: release.name,
 					entry: lines.join("\n"),

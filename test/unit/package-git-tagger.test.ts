@@ -11,7 +11,7 @@ const gitLayer = Layer.succeed(
 	Git.of({
 		add: () => Effect.void,
 		commit: () => Effect.void,
-		getChangedChangesetFilesSinceRef: () => Effect.succeed([]),
+		getChangedChangeFilesSinceRef: () => Effect.succeed([]),
 		getChangedFilesSinceRef: () => Effect.succeed([]),
 		tag: (tagName) =>
 			Effect.sync(() => {

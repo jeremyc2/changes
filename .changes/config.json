@@ -1,0 +1,16 @@
+{
+	"changelog": "changes/changelog",
+	"commit": false,
+	"fixed": [],
+	"linked": [],
+	"access": "restricted",
+	"baseBranch": "main",
+	"updateInternalDependencies": "patch",
+	"ignore": [],
+	"changedFilePatterns": ["**"],
+	"prettier": true,
+	"privatePackages": {
+		"version": false,
+		"tag": false
+	}
+}

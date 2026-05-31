@@ -1,9 +1,9 @@
 import { Context, type Effect } from "effect";
 
 /**
- * Structured CLI output (info, warn, error, success).
+ * Structured command output (info, warn, error, success).
  *
- * Replaces `@changesets/logger`.
+ * Replaces upstream logging.
  */
 export class CliOutput extends Context.Service<
 	CliOutput,

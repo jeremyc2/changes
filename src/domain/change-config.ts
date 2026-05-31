@@ -2,7 +2,7 @@ import type { AccessType } from "./workspace-package.ts";
 
 export type PackageGroup = ReadonlyArray<string>;
 
-export type ChangesetConfig = {
+export type ChangeConfig = {
 	readonly changelog: false | readonly [string, unknown];
 	readonly commit: false | readonly [string, unknown];
 	readonly fixed: ReadonlyArray<PackageGroup>;

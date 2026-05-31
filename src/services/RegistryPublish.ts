@@ -13,7 +13,7 @@ export class RegistryPublishError extends Schema.TaggedErrorClass<RegistryPublis
 /**
  * Publishes released packages to a registry.
  *
- * Replaces publish logic in `@changesets/cli`.
+ * Replaces upstream publish behavior.
  */
 export class RegistryPublish extends Context.Service<
 	RegistryPublish,

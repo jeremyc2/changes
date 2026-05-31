@@ -9,7 +9,7 @@ import type { PreReleaseState } from "../services/ReleasePlanAssembler.ts";
 import { WorkspacePackageDiscovery } from "../services/WorkspacePackageDiscovery.ts";
 import { encodeJsonStringLine, parseJsonString } from "./pure/json-codec.ts";
 
-const preStatePath = (rootDir: string) => `${rootDir}/.changeset/pre.json`;
+const preStatePath = (rootDir: string) => `${rootDir}/.changes/pre.json`;
 
 const make = Effect.gen(function* () {
 	const filesystem = yield* Filesystem;
@@ -72,9 +72,9 @@ const make = Effect.gen(function* () {
 				mode: "pre",
 				tag,
 				initialVersions,
-				changesets: existing?.changesets ?? [],
+				changes: existing?.changes ?? [],
 			};
-			yield* filesystem.ensureDirectory(`${rootDir}/.changeset`);
+			yield* filesystem.ensureDirectory(`${rootDir}/.changes`);
 			yield* filesystem.writeUtf8(
 				preStatePath(rootDir),
 				encodeJsonStringLine(nextState),

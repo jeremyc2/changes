@@ -1,5 +1,5 @@
 import { Context, type Effect } from "effect";
-import type { ParsedChangesetDocument } from "../domain/changeset-document.ts";
+import type { ParsedChangeDocument } from "../domain/change-document.ts";
 import type { ComprehensiveRelease } from "./ReleasePlanAssembler.ts";
 
 export type ChangelogEntry = {
@@ -10,13 +10,13 @@ export type ChangelogEntry = {
 /**
  * Generates changelog entries for releases.
  *
- * Replaces `@changesets/changelog-git`, `@changesets/changelog-github`, and CLI changelog hooks.
+ * Replaces upstream changelog hooks.
  */
 export class ChangelogGenerator extends Context.Service<
 	ChangelogGenerator,
 	{
 		readonly generateEntries: (options: {
-			readonly changesets: ReadonlyArray<ParsedChangesetDocument>;
+			readonly changes: ReadonlyArray<ParsedChangeDocument>;
 			readonly releases: ReadonlyArray<ComprehensiveRelease>;
 			readonly changelogConfig: false | readonly [string, unknown];
 		}) => Effect.Effect<ReadonlyArray<ChangelogEntry>>;

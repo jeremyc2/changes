@@ -1,16 +1,16 @@
 import { Effect, Layer } from "effect";
-import { ReadableChangesetId } from "../../services/ReadableChangesetId.ts";
+import { ReadableChangeId } from "../../services/ReadableChangeId.ts";
 import {
 	combinatorialPoolSize,
-	generateReadableChangesetId,
+	generateReadableChangeId,
 	maximumFormattedLength,
 	minimumFormattedLength,
 } from "./make.ts";
 
 export const layer = Layer.succeed(
-	ReadableChangesetId,
-	ReadableChangesetId.of({
-		generate: generateReadableChangesetId,
+	ReadableChangeId,
+	ReadableChangeId.of({
+		generate: generateReadableChangeId,
 		combinatorialPoolSize: (options) =>
 			Effect.succeed(combinatorialPoolSize(options)),
 		maximumFormattedLength: (options) =>

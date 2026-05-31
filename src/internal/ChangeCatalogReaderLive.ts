@@ -1,24 +1,24 @@
 import { Effect, Layer } from "effect";
-import type { ParsedChangesetDocument } from "../domain/changeset-document.ts";
-import { ChangesetCatalogReader } from "../services/ChangesetCatalogReader.ts";
-import { ChangesetDocumentParser } from "../services/ChangesetDocumentParser.ts";
+import type { ParsedChangeDocument } from "../domain/change-document.ts";
+import { ChangeCatalogReader } from "../services/ChangeCatalogReader.ts";
+import { ChangeDocumentParser } from "../services/ChangeDocumentParser.ts";
 import { Filesystem, FilesystemError } from "../services/Filesystem.ts";
 import { Git } from "../services/Git.ts";
 
 const make = Effect.gen(function* () {
 	const filesystem = yield* Filesystem;
-	const changesetDocumentParser = yield* ChangesetDocumentParser;
+	const changeDocumentParser = yield* ChangeDocumentParser;
 	const gitClient = yield* Git;
 
 	const readMarkdownFiles = Effect.fnUntraced(function* (rootDir: string) {
-		const changesetBase = `${rootDir}/.changeset`;
-		const exists = yield* filesystem.exists(changesetBase);
+		const changeBase = `${rootDir}/.changes`;
+		const exists = yield* filesystem.exists(changeBase);
 		if (!exists) {
 			return yield* new FilesystemError({
-				message: "There is no .changeset directory in this project",
+				message: "There is no .changes directory in this project",
 			});
 		}
-		return yield* filesystem.readDirectory(changesetBase);
+		return yield* filesystem.readDirectory(changeBase);
 	});
 
 	const readAll = Effect.fnUntraced(function* (rootDir: string) {
@@ -27,17 +27,15 @@ const make = Effect.gen(function* () {
 			(file) =>
 				!file.startsWith(".") && file !== "README.md" && file.endsWith(".md"),
 		);
-		const changesets: Array<ParsedChangesetDocument> = [];
+		const changes: Array<ParsedChangeDocument> = [];
 		for (const file of markdownFiles) {
-			const changesetId = file.replace(/\.md$/, "");
+			const changeId = file.replace(/\.md$/, "");
 			const contents = yield* filesystem.readUtf8(
-				`${rootDir}/.changeset/${file}`,
+				`${rootDir}/.changes/${file}`,
 			);
-			changesets.push(
-				yield* changesetDocumentParser.parseFile(changesetId, contents),
-			);
+			changes.push(yield* changeDocumentParser.parseFile(changeId, contents));
 		}
-		return changesets;
+		return changes;
 	});
 
 	const readSinceRef = Effect.fnUntraced(function* (
@@ -45,7 +43,7 @@ const make = Effect.gen(function* () {
 		sinceRef: string,
 	) {
 		const files = yield* readMarkdownFiles(rootDir);
-		const changed = yield* gitClient.getChangedChangesetFilesSinceRef({
+		const changed = yield* gitClient.getChangedChangeFilesSinceRef({
 			cwd: rootDir,
 			ref: sinceRef,
 		});
@@ -58,20 +56,18 @@ const make = Effect.gen(function* () {
 				file.endsWith(".md") &&
 				changedIds.has(file.replace(/\.md$/, "")),
 		);
-		const changesets: Array<ParsedChangesetDocument> = [];
+		const changes: Array<ParsedChangeDocument> = [];
 		for (const file of markdownFiles) {
-			const changesetId = file.replace(/\.md$/, "");
+			const changeId = file.replace(/\.md$/, "");
 			const contents = yield* filesystem.readUtf8(
-				`${rootDir}/.changeset/${file}`,
+				`${rootDir}/.changes/${file}`,
 			);
-			changesets.push(
-				yield* changesetDocumentParser.parseFile(changesetId, contents),
-			);
+			changes.push(yield* changeDocumentParser.parseFile(changeId, contents));
 		}
-		return changesets;
+		return changes;
 	});
 
-	return ChangesetCatalogReader.of({ readAll, readSinceRef });
+	return ChangeCatalogReader.of({ readAll, readSinceRef });
 });
 
-export const layer = Layer.effect(ChangesetCatalogReader, make);
+export const layer = Layer.effect(ChangeCatalogReader, make);

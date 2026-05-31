@@ -28,11 +28,11 @@ const addCliCommand = Command.make(
 			open: config.open,
 			empty: config.empty,
 		}),
-).pipe(Command.withDescription("Add a new changeset"));
+).pipe(Command.withDescription("Add a new change file"));
 
 const initCliCommand = Command.make("init", {}, () =>
 	initCommand(currentWorkingDirectory()),
-).pipe(Command.withDescription("Initialize changesets in the project"));
+).pipe(Command.withDescription("Initialize changes in the project"));
 
 const versionCliCommand = Command.make(
 	"version",
@@ -48,7 +48,7 @@ const versionCliCommand = Command.make(
 					: undefined,
 			versionMode: config.snapshot ? snapshotVersionMode() : undefined,
 		}),
-).pipe(Command.withDescription("Version packages based on changesets"));
+).pipe(Command.withDescription("Version packages based on change files"));
 
 const publishCliCommand = Command.make(
 	"publish",
@@ -79,7 +79,7 @@ const statusCliCommand = Command.make(
 			outputPath:
 				config.output._tag === "Some" ? config.output.value : undefined,
 		}),
-).pipe(Command.withDescription("Report changeset status"));
+).pipe(Command.withDescription("Report change status"));
 
 const preEnterCliCommand = Command.make(
 	"enter",
@@ -113,7 +113,7 @@ export const cli = Command.make("changes").pipe(
 		preCliCommand,
 		tagCliCommand,
 	]),
-	Command.withDescription("Manage versioning and publishing with changesets"),
+	Command.withDescription("Manage versioning and publishing with changes"),
 );
 
 export const runCli = Command.run(cli, { version: "0.0.0" });

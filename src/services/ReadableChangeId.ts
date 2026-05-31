@@ -1,6 +1,6 @@
 import { Context, type Effect } from "effect";
 
-export type ReadableChangesetIdOptions = {
+export type ReadableChangeIdOptions = {
 	readonly separator?: string;
 	readonly capitalizeWords?: boolean;
 	readonly descriptorCount?: number;
@@ -8,29 +8,29 @@ export type ReadableChangesetIdOptions = {
 };
 
 /**
- * Generates human-readable slugs for new `.changeset/*.md` filenames.
+ * Generates human-readable slugs for new `.changes/*.md` filenames.
  *
- * Replaces the `human-id` npm package used by `@changesets/write`.
+ * Replaces upstream readable id generation.
  */
-export class ReadableChangesetId extends Context.Service<
-	ReadableChangesetId,
+export class ReadableChangeId extends Context.Service<
+	ReadableChangeId,
 	{
 		readonly generate: (
-			options?: ReadableChangesetIdOptions,
+			options?: ReadableChangeIdOptions,
 		) => Effect.Effect<string>;
 		readonly combinatorialPoolSize: (
 			options?: Pick<
-				ReadableChangesetIdOptions,
+				ReadableChangeIdOptions,
 				"descriptorCount" | "includeMannerAdverb"
 			>,
 		) => Effect.Effect<number>;
 		readonly maximumFormattedLength: (
-			options?: ReadableChangesetIdOptions,
+			options?: ReadableChangeIdOptions,
 		) => Effect.Effect<number>;
 		readonly minimumFormattedLength: (
-			options?: ReadableChangesetIdOptions,
+			options?: ReadableChangeIdOptions,
 		) => Effect.Effect<number>;
 	}
->()("changes/services/ReadableChangesetId") {}
+>()("changes/services/ReadableChangeId") {}
 
-export type ReadableChangesetIdService = ReadableChangesetId["Service"];
+export type ReadableChangeIdService = ReadableChangeId["Service"];

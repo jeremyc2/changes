@@ -12,7 +12,7 @@ import {
 	applyFixedGroups,
 	applyLinkedGroups,
 	determineDependents,
-	filterRelevantChangesets,
+	filterRelevantChanges,
 	flattenReleases,
 	getSnapshotSuffix,
 } from "./assemble-release-plan.ts";
@@ -22,7 +22,7 @@ const make = Effect.gen(function* () {
 	const versionIncrement = yield* VersionIncrement;
 
 	const assemble = Effect.fnUntraced(function* (options: {
-		readonly changesets: ReleasePlan["changesets"];
+		readonly changes: ReleasePlan["changes"];
 		readonly workspace: Parameters<
 			ReleasePlanAssembler["Service"]["assemble"]
 		>[0]["workspace"];
@@ -48,12 +48,12 @@ const make = Effect.gen(function* () {
 			(options.ignoredPackages?.includes(workspacePackage.packageJson.name) ??
 				false);
 
-		const relevantChangesets = filterRelevantChangesets(
-			options.changesets,
+		const relevantChanges = filterRelevantChanges(
+			options.changes,
 			options.preState,
 		);
 		const releases = flattenReleases(
-			relevantChangesets,
+			relevantChanges,
 			packagesByName,
 			shouldSkip,
 		);
@@ -105,11 +105,11 @@ const make = Effect.gen(function* () {
 				type: release.type,
 				oldVersion: release.oldVersion,
 				newVersion,
-				changesets: release.changesets,
+				changes: release.changes,
 			});
 		}
 		return {
-			changesets: relevantChangesets,
+			changes: relevantChanges,
 			releases: comprehensiveReleases,
 			preState: options.preState,
 			versionMode,

@@ -34,7 +34,7 @@ const release = (name: string): ComprehensiveRelease => ({
 	type: "patch",
 	oldVersion: "1.0.0",
 	newVersion: "1.0.1",
-	changesets: ["release"],
+	changes: ["release"],
 });
 
 layer(testLayer)("RegistryPublish", (it) => {

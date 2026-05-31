@@ -1,9 +1,9 @@
 import type {
-	ChangesetDraft,
+	ChangeDraft,
 	Release,
 	VersionType,
-} from "../../domain/changeset-document.ts";
-import { versionTypes } from "../../domain/changeset-document.ts";
+} from "../../domain/change-document.ts";
+import { versionTypes } from "../../domain/change-document.ts";
 
 // [\s\S] matches any character including newlines (DOTALL)
 const frontmatterPattern = /\s*---([\s\S]*?)\n\s*---(\s*(?:\n|$)[\s\S]*)/;
@@ -22,17 +22,17 @@ const validateReleases = (
 	for (const release of releases) {
 		if (typeof release.name !== "string" || release.name.trim() === "") {
 			throw new Error(
-				`could not parse changeset - invalid package name in frontmatter.\nExpected a non-empty string for package name, but got: ${JSON.stringify(release.name)}\nChangeset contents:\n${truncate(contents)}`,
+				`could not parse change - invalid package name in frontmatter.\nExpected a non-empty string for package name, but got: ${JSON.stringify(release.name)}\nChange contents:\n${truncate(contents)}`,
 			);
 		}
 		if (typeof release.type !== "string") {
 			throw new Error(
-				`could not parse changeset - invalid release type for package "${release.name}".\nExpected a string for release type, but got: ${typeof release.type}\nChangeset contents:\n${truncate(contents)}`,
+				`could not parse change - invalid release type for package "${release.name}".\nExpected a string for release type, but got: ${typeof release.type}\nChange contents:\n${truncate(contents)}`,
 			);
 		}
 		if (!validVersionTypes.has(release.type)) {
 			throw new Error(
-				`could not parse changeset - invalid version type ${JSON.stringify(release.type)} for package "${release.name}".\nValid version types are: ${versionTypes.join(", ")}\nChangeset contents:\n${truncate(contents)}`,
+				`could not parse change - invalid version type ${JSON.stringify(release.type)} for package "${release.name}".\nValid version types are: ${versionTypes.join(", ")}\nChange contents:\n${truncate(contents)}`,
 			);
 		}
 	}
@@ -58,24 +58,24 @@ const parseFrontmatterLine = (
 	return { name, type: type as VersionType };
 };
 
-export const parseChangesetDocument = (contents: string): ChangesetDraft => {
+export const parseChangeDocument = (contents: string): ChangeDraft => {
 	const trimmedContents = contents.trim();
 	if (trimmedContents === "") {
 		throw new Error(
-			`could not parse changeset - file is empty.\nChangesets must have frontmatter with package names and version types.\nExample:\n${exampleFormat}\n\nYour changeset summary here.`,
+			`could not parse change - file is empty.\nChanges must have frontmatter with package names and version types.\nExample:\n${exampleFormat}\n\nYour change summary here.`,
 		);
 	}
 	const match = frontmatterPattern.exec(contents);
 	if (match === null) {
 		throw new Error(
-			`could not parse changeset - missing or invalid frontmatter.\nChangesets must start with frontmatter delimited by "---".\nExample:\n${exampleFormat}\n\nYour changeset summary here.\nReceived content:\n${truncate(trimmedContents)}`,
+			`could not parse change - missing or invalid frontmatter.\nChanges must start with frontmatter delimited by "---".\nExample:\n${exampleFormat}\n\nYour change summary here.\nReceived content:\n${truncate(trimmedContents)}`,
 		);
 	}
 	const roughReleases = match[1];
 	const roughSummary = match[2];
 	if (roughReleases === undefined || roughSummary === undefined) {
 		throw new Error(
-			`could not parse changeset - missing or invalid frontmatter.\nChangesets must start with frontmatter delimited by "---".\nExample:\n${exampleFormat}\n\nYour changeset summary here.\nReceived content:\n${truncate(trimmedContents)}`,
+			`could not parse change - missing or invalid frontmatter.\nChanges must start with frontmatter delimited by "---".\nExample:\n${exampleFormat}\n\nYour change summary here.\nReceived content:\n${truncate(trimmedContents)}`,
 		);
 	}
 	const summary = roughSummary.trim();
@@ -87,7 +87,7 @@ export const parseChangesetDocument = (contents: string): ChangesetDraft => {
 	return { summary, releases };
 };
 
-export const formatChangesetDocument = (draft: ChangesetDraft): string => {
+export const formatChangeDocument = (draft: ChangeDraft): string => {
 	const frontmatter = draft.releases
 		.map((release) => `"${release.name}": ${release.type}`)
 		.join("\n");

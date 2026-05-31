@@ -1,5 +1,5 @@
 import { Effect, Random } from "effect";
-import type { ReadableChangesetIdOptions } from "../../services/ReadableChangesetId.ts";
+import type { ReadableChangeIdOptions } from "../../services/ReadableChangeId.ts";
 import {
 	actionWords,
 	descriptorWords,
@@ -31,16 +31,16 @@ const shortestWord = (words: ReadonlyArray<string>): string =>
 	);
 
 const resolveOptions = (
-	options: ReadableChangesetIdOptions = {},
-): Required<ReadableChangesetIdOptions> => ({
+	options: ReadableChangeIdOptions = {},
+): Required<ReadableChangeIdOptions> => ({
 	separator: options.separator ?? "-",
 	capitalizeWords: options.capitalizeWords ?? false,
 	descriptorCount: options.descriptorCount ?? 1,
 	includeMannerAdverb: options.includeMannerAdverb ?? false,
 });
 
-export const generateReadableChangesetId = Effect.fnUntraced(function* (
-	options?: ReadableChangesetIdOptions,
+export const generateReadableChangeId = Effect.fnUntraced(function* (
+	options?: ReadableChangeIdOptions,
 ) {
 	const resolved = resolveOptions(options);
 	const parts: Array<string> = [];
@@ -59,7 +59,7 @@ export const generateReadableChangesetId = Effect.fnUntraced(function* (
 
 export const combinatorialPoolSize = (
 	options: Pick<
-		ReadableChangesetIdOptions,
+		ReadableChangeIdOptions,
 		"descriptorCount" | "includeMannerAdverb"
 	> = {},
 ): number => {
@@ -74,7 +74,7 @@ export const combinatorialPoolSize = (
 };
 
 export const maximumFormattedLength = (
-	options: ReadableChangesetIdOptions = {},
+	options: ReadableChangeIdOptions = {},
 ): number => {
 	const resolved = resolveOptions(options);
 	return (
@@ -90,7 +90,7 @@ export const maximumFormattedLength = (
 };
 
 export const minimumFormattedLength = (
-	options: ReadableChangesetIdOptions = {},
+	options: ReadableChangeIdOptions = {},
 ): number => {
 	const resolved = resolveOptions(options);
 	return (

@@ -1,5 +1,5 @@
 import { Context, type Effect } from "effect";
-import type { ChangesetConfig } from "../domain/changeset-config.ts";
+import type { ChangeConfig } from "../domain/change-config.ts";
 import type { WorkspacePackage } from "../domain/workspace-package.ts";
 import type { GitError } from "./Git.ts";
 import type { WorkspaceDiscoveryError } from "./WorkspacePackageDiscovery.ts";
@@ -14,7 +14,7 @@ export class ChangedPackageDetection extends Context.Service<
 	{
 		readonly detectVersionableChangedPackages: (options: {
 			readonly cwd: string;
-			readonly config: ChangesetConfig;
+			readonly config: ChangeConfig;
 			readonly ref?: string;
 		}) => Effect.Effect<
 			ReadonlyArray<WorkspacePackage>,
